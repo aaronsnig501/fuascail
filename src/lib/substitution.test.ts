@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildCipherWords,
   createNumberAssignment,
   createSubstitutionPuzzle,
   extractUniqueLetters,
@@ -86,5 +87,19 @@ describe('substitution logic', () => {
     expect(puzzle.starterLetters).toEqual([]);
     expect(puzzle.letterToNumber).toEqual({ A: 2, B: 1 });
     expect(puzzle.numberToLetter).toEqual({ 1: 'B', 2: 'A' });
+  });
+
+  it('projects text into cipher word groups with numbered letter cells and punctuation', () => {
+    expect(buildCipherWords('Abba!', { A: 2, B: 1 })).toEqual([
+      {
+        cells: [
+          { kind: 'letter', letter: 'A', number: 2 },
+          { kind: 'letter', letter: 'B', number: 1 },
+          { kind: 'letter', letter: 'B', number: 1 },
+          { kind: 'letter', letter: 'A', number: 2 },
+          { kind: 'punctuation', value: '!' }
+        ]
+      }
+    ]);
   });
 });
