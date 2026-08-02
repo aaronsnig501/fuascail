@@ -8,13 +8,12 @@
     getDateKey,
     recordServedContent,
     selectContentForDate,
-    type ContentBankItem,
+    type PuzzleContent,
     type ServedContentRecord
   } from '$lib/content';
   import type { DifficultyTier, LivesMode, OrthographyMode, WrongGuessesByNumber } from '$lib/substitution';
   import {
     DIFFICULTY_SETTINGS,
-    applyOrthography,
     createSubstitutionPuzzle,
     evaluateGuess,
     getHintAllowance,
@@ -24,11 +23,11 @@
   const servedContentStorageKey = 'fuascail.recentlyServedContent';
   const todayKey = getDateKey(new Date());
 
-  let mode: OrthographyMode = $state('digraf');
-  let difficulty: DifficultyTier = $state('medium');
-  let livesMode: LivesMode = $state('teoranta');
+  let mode = $state<OrthographyMode>('digraf');
+  let difficulty = $state<DifficultyTier>('medium');
+  let livesMode = $state<LivesMode>('teoranta');
   let puzzleSeed = $state(1);
-  let selectedContent: ContentBankItem = $state(selectContentForDate(CONTENT_BANK, todayKey));
+  let selectedContent: PuzzleContent = $state(selectContentForDate(CONTENT_BANK, todayKey));
   let selectedNumber: number | null = $state(null);
   let guesses: Record<number, string> = $state({});
   let wrongGuessesByNumber: WrongGuessesByNumber = $state({});
@@ -37,7 +36,7 @@
   let status = $state('roghnaigh cill chun tosú');
   let showTranslation = $state(false);
 
-  let phrase = $derived(applyOrthography(selectedContent.text, mode));
+  let phrase = $derived(mode === 'trad' ? selectedContent.text_trad : selectedContent.text_digraf);
   let puzzle = $derived(
     createSubstitutionPuzzle(phrase, difficulty, seededRandomFromSeed(puzzleSeed))
   );
@@ -63,6 +62,7 @@
   onMount(() => {
     const servedRecords = loadServedContentRecords();
     selectedContent = selectContentForDate(CONTENT_BANK, todayKey, servedRecords);
+    difficulty = selectedContent.difficulty_tier;
     saveServedContentRecords(
       recordServedContent(
         servedRecords,
@@ -71,7 +71,7 @@
         RECENT_CONTENT_WINDOW_DAYS
       )
     );
-    resetProgress(getLifeCount(difficulty));
+    resetProgress(getLifeCount(selectedContent.difficulty_tier));
   });
 
   function setMode(nextMode: OrthographyMode): void {
@@ -336,11 +336,11 @@
           </button>
 
           {#if showTranslation}
-            <p class="mb-4 font-mono text-xs text-stone-400">{selectedContent.translation}</p>
+            <p class="mb-4 font-mono text-xs text-stone-400">{selectedContent.translation_en}</p>
           {/if}
 
           <p class="border-t border-stone-700 pt-4 text-left text-sm leading-6 text-stone-400">
-            {selectedContent.provenanceNote}
+            {selectedContent.provenance_note}
           </p>
         </div>
       {/if}
