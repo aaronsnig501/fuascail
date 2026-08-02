@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   CONTENT_BANK,
   PUZZLE_CONTENT_JSON_SCHEMA,
+  CONTENT_BANK_TARGET_SIZE,
+  getContentBankReadiness,
   getDateKey,
+  getProductionReadyContentBank,
   pruneServedRecords,
   recordServedContent,
   selectContentForDate,
@@ -160,7 +163,8 @@ describe('content selection', () => {
       translation_en: 'A',
       provenance_note: 'A',
       difficulty_tier: 'easy',
-      source_rights_reference: 'Test fixture.'
+      source_rights_reference: 'Test fixture.',
+      linguistic_review: { status: 'pending' }
     },
     {
       id: 'b',
@@ -170,7 +174,8 @@ describe('content selection', () => {
       translation_en: 'B',
       provenance_note: 'B',
       difficulty_tier: 'medium',
-      source_rights_reference: 'Test fixture.'
+      source_rights_reference: 'Test fixture.',
+      linguistic_review: { status: 'pending' }
     },
     {
       id: 'c',
@@ -180,7 +185,8 @@ describe('content selection', () => {
       translation_en: 'C',
       provenance_note: 'C',
       difficulty_tier: 'hard',
-      source_rights_reference: 'Test fixture.'
+      source_rights_reference: 'Test fixture.',
+      linguistic_review: { status: 'pending' }
     }
   ];
 
@@ -193,7 +199,8 @@ describe('content selection', () => {
       'translation_en',
       'provenance_note',
       'difficulty_tier',
-      'source_rights_reference'
+      'source_rights_reference',
+      'linguistic_review'
     ]);
   });
 
@@ -210,9 +217,44 @@ describe('content selection', () => {
         text_trad: 'Téacs',
         translation_en: 'Text',
         provenance_note: 'Fixture note.',
-        difficulty_tier: 'easy'
+        difficulty_tier: 'easy',
+        linguistic_review: { status: 'pending' }
       })
     ).toBe(false);
+  });
+
+  it('requires native-speaker or linguist sign-off before production eligibility', () => {
+    const unsignedFixture = bank[0];
+
+    if (unsignedFixture === undefined) {
+      throw new Error('Missing content fixture.');
+    }
+
+    const signedOffFixture: PuzzleContent = {
+      ...unsignedFixture,
+      source_rights_reference:
+        'Dúchas.ie / National Folklore Collection, The Schools’ Collection; open data CC BY 4.0.',
+      linguistic_review: {
+        status: 'signed_off',
+        reviewer_name: 'Reviewer Name',
+        reviewer_role: 'linguist',
+        reviewed_on: '2026-08-02'
+      }
+    };
+
+    expect(getProductionReadyContentBank([unsignedFixture, signedOffFixture])).toEqual([
+      signedOffFixture
+    ]);
+  });
+
+  it('reports production readiness against the 120-entry target', () => {
+    const readiness = getContentBankReadiness(CONTENT_BANK);
+
+    expect(readiness.targetSize).toBe(CONTENT_BANK_TARGET_SIZE);
+    expect(readiness.totalEntries).toBe(CONTENT_BANK.length);
+    expect(readiness.readyForProduction).toBe(false);
+    expect(readiness.signedOffEntries).toBe(0);
+    expect(readiness.unsignedEntryIds).toEqual(CONTENT_BANK.map((item) => item.id));
   });
 
   it('selects deterministically from the same bank and date key', () => {

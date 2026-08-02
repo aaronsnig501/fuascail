@@ -1,5 +1,24 @@
 import type { DifficultyTier } from './substitution';
 
+export const CONTENT_BANK_TARGET_SIZE = 120;
+export const APPROVED_TRADITIONAL_SOURCE_REFERENCES = [
+  'duchas.ie',
+  'National Folklore Collection',
+  'Dúchas'
+] as const;
+
+export type LinguisticReview =
+  | {
+      status: 'pending';
+    }
+  | {
+      status: 'signed_off';
+      reviewer_name: string;
+      reviewer_role: 'native_speaker' | 'linguist';
+      reviewed_on: string;
+      notes?: string;
+    };
+
 export type PuzzleContent = {
   id: string;
   category: string;
@@ -9,6 +28,17 @@ export type PuzzleContent = {
   provenance_note: string;
   difficulty_tier: DifficultyTier;
   source_rights_reference: string;
+  linguistic_review: LinguisticReview;
+};
+
+export type ContentBankReadiness = {
+  targetSize: number;
+  totalEntries: number;
+  signedOffEntries: number;
+  unsignedEntryIds: string[];
+  unapprovedSourceEntryIds: string[];
+  missingRightsReferenceIds: string[];
+  readyForProduction: boolean;
 };
 
 export type ServedContentRecord = {
@@ -31,7 +61,8 @@ export const PUZZLE_CONTENT_JSON_SCHEMA = {
     'translation_en',
     'provenance_note',
     'difficulty_tier',
-    'source_rights_reference'
+    'source_rights_reference',
+    'linguistic_review'
   ],
   properties: {
     id: { type: 'string', minLength: 1 },
@@ -41,7 +72,31 @@ export const PUZZLE_CONTENT_JSON_SCHEMA = {
     translation_en: { type: 'string', minLength: 1 },
     provenance_note: { type: 'string', minLength: 1 },
     difficulty_tier: { enum: ['easy', 'medium', 'hard', 'expert'] },
-    source_rights_reference: { type: 'string', minLength: 1 }
+    source_rights_reference: { type: 'string', minLength: 1 },
+    linguistic_review: {
+      oneOf: [
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['status'],
+          properties: {
+            status: { const: 'pending' }
+          }
+        },
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['status', 'reviewer_name', 'reviewer_role', 'reviewed_on'],
+          properties: {
+            status: { const: 'signed_off' },
+            reviewer_name: { type: 'string', minLength: 1 },
+            reviewer_role: { enum: ['native_speaker', 'linguist'] },
+            reviewed_on: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+            notes: { type: 'string' }
+          }
+        }
+      ]
+    }
   }
 } as const;
 
@@ -55,7 +110,9 @@ export const CONTENT_BANK: readonly PuzzleContent[] = [
     provenance_note:
       'Ní bua aon duine amháin é seo — sean-nath a deirtear ag bailiúcháin, ag tógáil tí, ag cur an fhómhair. Meabhrúchán go bhfuil an lámh chúnta níos láidre ná an lámh aonair.',
     difficulty_tier: 'medium',
-    source_rights_reference: 'Traditional Irish proverb; public-domain folk saying.'
+    source_rights_reference:
+      'Traditional Irish proverb; candidate entry pending archival source verification.',
+    linguistic_review: { status: 'pending' }
   },
   {
     id: 'shared-shelter',
@@ -66,7 +123,9 @@ export const CONTENT_BANK: readonly PuzzleContent[] = [
     provenance_note:
       'Seanfhocal faoi chomhluadar agus faoi chúram pobail. Cuireann sé i gcuimhne dúinn nach seasann duine ina aonar ar feadh i bhfad.',
     difficulty_tier: 'hard',
-    source_rights_reference: 'Traditional Irish proverb; public-domain folk saying.'
+    source_rights_reference:
+      'Traditional Irish proverb; candidate entry pending archival source verification.',
+    linguistic_review: { status: 'pending' }
   },
   {
     id: 'good-beginning',
@@ -77,7 +136,9 @@ export const CONTENT_BANK: readonly PuzzleContent[] = [
     provenance_note:
       'Nath coitianta a deirtear le hobair nua, le foghlaim, agus le haon iarracht a dteastaíonn misneach uaithi ag an tús.',
     difficulty_tier: 'easy',
-    source_rights_reference: 'Traditional Irish proverb; public-domain folk saying.'
+    source_rights_reference:
+      'Traditional Irish proverb; candidate entry pending archival source verification.',
+    linguistic_review: { status: 'pending' }
   },
   {
     id: 'praise-youth',
@@ -88,7 +149,9 @@ export const CONTENT_BANK: readonly PuzzleContent[] = [
     provenance_note:
       'Seanfhocal a bhaineann le spreagadh agus muinín. Tugann sé áit don fhocal maith mar chuid den fhás.',
     difficulty_tier: 'medium',
-    source_rights_reference: 'Traditional Irish proverb; public-domain folk saying.'
+    source_rights_reference:
+      'Traditional Irish proverb; candidate entry pending archival source verification.',
+    linguistic_review: { status: 'pending' }
   },
   {
     id: 'broken-irish',
@@ -100,7 +163,8 @@ export const CONTENT_BANK: readonly PuzzleContent[] = [
       'Nath nua-aimseartha i spiorad na seanfhocal, cloiste go minic i gcomhthéacs foghlaim agus úsáid na Gaeilge gan faitíos.',
     difficulty_tier: 'medium',
     source_rights_reference:
-      'Contemporary Irish-language saying in common circulation; included as user-curated app content.'
+      'Contemporary Irish-language saying in common circulation; included as user-curated app content.',
+    linguistic_review: { status: 'pending' }
   }
 ];
 
@@ -119,8 +183,50 @@ export function validatePuzzleContent(item: unknown): item is PuzzleContent {
     isNonEmptyString(candidate.translation_en) &&
     isNonEmptyString(candidate.provenance_note) &&
     isDifficultyTier(candidate.difficulty_tier) &&
-    isNonEmptyString(candidate.source_rights_reference)
+    isNonEmptyString(candidate.source_rights_reference) &&
+    isLinguisticReview(candidate.linguistic_review)
   );
+}
+
+export function getProductionReadyContentBank(
+  bank: readonly PuzzleContent[]
+): PuzzleContent[] {
+  return bank.filter(
+    (item) =>
+      validatePuzzleContent(item) &&
+      item.linguistic_review.status === 'signed_off' &&
+      hasApprovedTraditionalSourceReference(item)
+  );
+}
+
+export function getContentBankReadiness(
+  bank: readonly PuzzleContent[],
+  targetSize = CONTENT_BANK_TARGET_SIZE
+): ContentBankReadiness {
+  const signedOffEntries = getProductionReadyContentBank(bank);
+  const unsignedEntryIds = bank
+    .filter((item) => item.linguistic_review.status !== 'signed_off')
+    .map((item) => item.id);
+  const unapprovedSourceEntryIds = bank
+    .filter((item) => !hasApprovedTraditionalSourceReference(item))
+    .map((item) => item.id);
+  const missingRightsReferenceIds = bank
+    .filter((item) => item.source_rights_reference.trim().length === 0)
+    .map((item) => item.id);
+
+  return {
+    targetSize,
+    totalEntries: bank.length,
+    signedOffEntries: signedOffEntries.length,
+    unsignedEntryIds,
+    unapprovedSourceEntryIds,
+    missingRightsReferenceIds,
+    readyForProduction:
+      signedOffEntries.length >= targetSize &&
+      unsignedEntryIds.length === 0 &&
+      unapprovedSourceEntryIds.length === 0 &&
+      missingRightsReferenceIds.length === 0
+  };
 }
 
 export function getDateKey(date: Date): string {
@@ -222,4 +328,48 @@ function isNonEmptyString(value: unknown): value is string {
 
 function isDifficultyTier(value: unknown): value is DifficultyTier {
   return value === 'easy' || value === 'medium' || value === 'hard' || value === 'expert';
+}
+
+function isLinguisticReview(value: unknown): value is LinguisticReview {
+  if (typeof value !== 'object' || value === null || !('status' in value)) {
+    return false;
+  }
+
+  if (value.status === 'pending') {
+    return true;
+  }
+
+  if (value.status !== 'signed_off') {
+    return false;
+  }
+
+  return (
+    'reviewer_name' in value &&
+    'reviewer_role' in value &&
+    'reviewed_on' in value &&
+    isNonEmptyString(value.reviewer_name) &&
+    (value.reviewer_role === 'native_speaker' || value.reviewer_role === 'linguist') &&
+    isDateKey(value.reviewed_on)
+  );
+}
+
+function hasApprovedTraditionalSourceReference(item: PuzzleContent): boolean {
+  return APPROVED_TRADITIONAL_SOURCE_REFERENCES.some((sourceReference) =>
+    item.source_rights_reference.toLocaleLowerCase('en').includes(
+      sourceReference.toLocaleLowerCase('en')
+    )
+  );
+}
+
+function isDateKey(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  try {
+    parseDateKey(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
