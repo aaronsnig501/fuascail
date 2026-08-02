@@ -12,6 +12,9 @@
   } from '$lib/substitution';
 
   const sourcePhrase = 'Ní neart go cur le chéile.';
+  const translation = "There's no strength without unity.";
+  const provenanceNote =
+    'Ní bua aon duine amháin é seo — sean-nath a deirtear ag bailiúcháin, ag tógáil tí, ag cur an fhómhair. Meabhrúchán go bhfuil an lámh chúnta níos láidre ná an lámh aonair.';
 
   let mode: OrthographyMode = $state('digraf');
   let difficulty: DifficultyTier = $state('medium');
@@ -23,6 +26,7 @@
   let hintsUsed = $state(0);
   let livesLeft = $state(getLifeCount('medium'));
   let status = $state('roghnaigh cill chun tosú');
+  let showTranslation = $state(false);
 
   let phrase = $derived(applyOrthography(sourcePhrase, mode));
   let puzzle = $derived(
@@ -38,7 +42,14 @@
   let solvedNumbers = $derived([...puzzle.starterNumbers, ...correctGuessNumbers]);
   let solvedLetters = $derived(solvedNumbers.map((number) => puzzle.numberToLetter[number] ?? ''));
   let remainingHints = $derived(Math.max(0, hintAllowance - hintsUsed));
-  let locked = $derived(livesMode === 'teoranta' && livesLeft <= 0);
+  let complete = $derived(
+    Object.keys(puzzle.numberToLetter)
+      .map(Number)
+      .every((number) => solvedNumbers.includes(number))
+  );
+  let resultKind = $derived(complete ? 'solved' : livesMode === 'teoranta' && livesLeft <= 0 ? 'shown' : null);
+  let locked = $derived(resultKind !== null);
+  let resultEyebrow = $derived(resultKind === 'solved' ? 'Réitithe' : 'Seo é');
 
   function setMode(nextMode: OrthographyMode): void {
     if (mode === nextMode) {
@@ -67,6 +78,7 @@
     hintsUsed = 0;
     livesLeft = nextLivesLeft;
     status = 'roghnaigh cill chun tosú';
+    showTranslation = false;
   }
 
   function guessLetter(letter: string): void {
@@ -245,10 +257,34 @@
     />
 
     <div class="mt-4 border-y border-stone-700 px-2 py-3">
-      {#if locked}
-        <p class="text-center font-mono text-xs text-[#d95a3f]">seo é</p>
-      {:else}
+      {#if resultKind === null}
         <p class="text-center font-mono text-xs text-stone-400">{status}</p>
+      {:else}
+        <div class="text-center">
+          <p class="mb-3 font-mono text-[10px] tracking-[0.14em] text-[#d95a3f] uppercase">
+            {resultEyebrow}
+          </p>
+          <p class="mb-2 text-2xl leading-snug text-stone-100">{phrase}</p>
+
+          <button
+            type="button"
+            class="mb-4 border border-stone-700 px-3 py-1.5 font-mono text-[10px] tracking-[0.08em] text-stone-400 uppercase"
+            aria-pressed={showTranslation}
+            onclick={() => {
+              showTranslation = !showTranslation;
+            }}
+          >
+            Aistriúchán
+          </button>
+
+          {#if showTranslation}
+            <p class="mb-4 font-mono text-xs text-stone-400">{translation}</p>
+          {/if}
+
+          <p class="border-t border-stone-700 pt-4 text-left text-sm leading-6 text-stone-400">
+            {provenanceNote}
+          </p>
+        </div>
       {/if}
     </div>
 
