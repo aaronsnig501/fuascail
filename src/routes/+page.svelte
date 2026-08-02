@@ -1,6 +1,16 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import CipherKeyboard from '$lib/CipherKeyboard.svelte';
   import CipherText from '$lib/CipherText.svelte';
+  import {
+    CONTENT_BANK,
+    RECENT_CONTENT_WINDOW_DAYS,
+    getDateKey,
+    recordServedContent,
+    selectContentForDate,
+    type ContentBankItem,
+    type ServedContentRecord
+  } from '$lib/content';
   import type { DifficultyTier, LivesMode, OrthographyMode, WrongGuessesByNumber } from '$lib/substitution';
   import {
     DIFFICULTY_SETTINGS,
@@ -11,15 +21,14 @@
     getLifeCount
   } from '$lib/substitution';
 
-  const sourcePhrase = 'Ní neart go cur le chéile.';
-  const translation = "There's no strength without unity.";
-  const provenanceNote =
-    'Ní bua aon duine amháin é seo — sean-nath a deirtear ag bailiúcháin, ag tógáil tí, ag cur an fhómhair. Meabhrúchán go bhfuil an lámh chúnta níos láidre ná an lámh aonair.';
+  const servedContentStorageKey = 'fuascail.recentlyServedContent';
+  const todayKey = getDateKey(new Date());
 
   let mode: OrthographyMode = $state('digraf');
   let difficulty: DifficultyTier = $state('medium');
   let livesMode: LivesMode = $state('teoranta');
   let puzzleSeed = $state(1);
+  let selectedContent: ContentBankItem = $state(selectContentForDate(CONTENT_BANK, todayKey));
   let selectedNumber: number | null = $state(null);
   let guesses: Record<number, string> = $state({});
   let wrongGuessesByNumber: WrongGuessesByNumber = $state({});
@@ -28,7 +37,7 @@
   let status = $state('roghnaigh cill chun tosú');
   let showTranslation = $state(false);
 
-  let phrase = $derived(applyOrthography(sourcePhrase, mode));
+  let phrase = $derived(applyOrthography(selectedContent.text, mode));
   let puzzle = $derived(
     createSubstitutionPuzzle(phrase, difficulty, seededRandomFromSeed(puzzleSeed))
   );
@@ -50,6 +59,20 @@
   let resultKind = $derived(complete ? 'solved' : livesMode === 'teoranta' && livesLeft <= 0 ? 'shown' : null);
   let locked = $derived(resultKind !== null);
   let resultEyebrow = $derived(resultKind === 'solved' ? 'Réitithe' : 'Seo é');
+
+  onMount(() => {
+    const servedRecords = loadServedContentRecords();
+    selectedContent = selectContentForDate(CONTENT_BANK, todayKey, servedRecords);
+    saveServedContentRecords(
+      recordServedContent(
+        servedRecords,
+        selectedContent.id,
+        todayKey,
+        RECENT_CONTENT_WINDOW_DAYS
+      )
+    );
+    resetProgress(getLifeCount(difficulty));
+  });
 
   function setMode(nextMode: OrthographyMode): void {
     if (mode === nextMode) {
@@ -148,6 +171,41 @@
       state = (state * 1664525 + 1013904223) % 4294967296;
       return state / 4294967296;
     };
+  }
+
+  function loadServedContentRecords(): ServedContentRecord[] {
+    const storedValue = localStorage.getItem(servedContentStorageKey);
+
+    if (storedValue === null) {
+      return [];
+    }
+
+    try {
+      const parsedValue: unknown = JSON.parse(storedValue);
+
+      if (!Array.isArray(parsedValue)) {
+        return [];
+      }
+
+      return parsedValue.filter(isServedContentRecord);
+    } catch {
+      return [];
+    }
+  }
+
+  function saveServedContentRecords(records: readonly ServedContentRecord[]): void {
+    localStorage.setItem(servedContentStorageKey, JSON.stringify(records));
+  }
+
+  function isServedContentRecord(value: unknown): value is ServedContentRecord {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'id' in value &&
+      'servedOn' in value &&
+      typeof value.id === 'string' &&
+      typeof value.servedOn === 'string'
+    );
   }
 </script>
 
@@ -278,11 +336,11 @@
           </button>
 
           {#if showTranslation}
-            <p class="mb-4 font-mono text-xs text-stone-400">{translation}</p>
+            <p class="mb-4 font-mono text-xs text-stone-400">{selectedContent.translation}</p>
           {/if}
 
           <p class="border-t border-stone-700 pt-4 text-left text-sm leading-6 text-stone-400">
-            {provenanceNote}
+            {selectedContent.provenanceNote}
           </p>
         </div>
       {/if}
