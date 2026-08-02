@@ -1,5 +1,16 @@
 export const FADA_LETTERS = ['Á', 'É', 'Í', 'Ó', 'Ú'] as const;
 export const DOT_LETTERS = ['Ḃ', 'Ċ', 'Ḋ', 'Ḟ', 'Ġ', 'Ṁ', 'Ṗ', 'Ṡ', 'Ṫ'] as const;
+export const DIGRAPH_TO_DOT_ABOVE_PAIRS = [
+  ['bh', 'ḃ'],
+  ['ch', 'ċ'],
+  ['dh', 'ḋ'],
+  ['fh', 'ḟ'],
+  ['gh', 'ġ'],
+  ['mh', 'ṁ'],
+  ['ph', 'ṗ'],
+  ['sh', 'ṡ'],
+  ['th', 'ṫ']
+] as const;
 
 export const DIFFICULTY_SETTINGS = {
   easy: {
@@ -78,6 +89,17 @@ export function isSubstitutionLetter(character: string): boolean {
 
 export function normalizeSubstitutionLetter(character: string): string {
   return character.toLocaleUpperCase('ga-IE');
+}
+
+export function applyOrthography(text: string, mode: OrthographyMode): string {
+  if (mode === 'digraf') {
+    return text;
+  }
+
+  return DIGRAPH_TO_DOT_ABOVE_PAIRS.reduce(
+    (convertedText, [digraph, dotAbove]) => replaceDigraph(convertedText, digraph, dotAbove),
+    text
+  );
 }
 
 export function extractUniqueLetters(text: string): string[] {
@@ -253,4 +275,17 @@ function shuffle<T>(values: readonly T[], random: RandomSource): T[] {
   }
 
   return shuffled;
+}
+
+function replaceDigraph(text: string, digraph: string, dotAbove: string): string {
+  return text.replaceAll(digraph, dotAbove).replaceAll(
+    capitalizeFirstLetter(digraph),
+    capitalizeFirstLetter(dotAbove)
+  ).replaceAll(digraph.toLocaleUpperCase('ga-IE'), dotAbove.toLocaleUpperCase('ga-IE'));
+}
+
+function capitalizeFirstLetter(value: string): string {
+  const [first = '', ...rest] = Array.from(value);
+
+  return `${first.toLocaleUpperCase('ga-IE')}${rest.join('')}`;
 }

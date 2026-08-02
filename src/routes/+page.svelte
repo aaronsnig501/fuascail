@@ -4,20 +4,19 @@
   import type { DifficultyTier, LivesMode, OrthographyMode, WrongGuessesByNumber } from '$lib/substitution';
   import {
     DIFFICULTY_SETTINGS,
+    applyOrthography,
     createSubstitutionPuzzle,
     evaluateGuess,
     getHintAllowance,
     getLifeCount
   } from '$lib/substitution';
 
-  const phrases: Record<OrthographyMode, string> = {
-    digraf: 'Ní neart go cur le chéile.',
-    trad: 'Ní neart go cur le ċéile.'
-  };
+  const sourcePhrase = 'Ní neart go cur le chéile.';
 
   let mode: OrthographyMode = $state('digraf');
   let difficulty: DifficultyTier = $state('medium');
   let livesMode: LivesMode = $state('teoranta');
+  let puzzleSeed = $state(1);
   let selectedNumber: number | null = $state(null);
   let guesses: Record<number, string> = $state({});
   let wrongGuessesByNumber: WrongGuessesByNumber = $state({});
@@ -25,9 +24,9 @@
   let livesLeft = $state(getLifeCount('medium'));
   let status = $state('roghnaigh cill chun tosú');
 
-  let phrase = $derived(phrases[mode]);
+  let phrase = $derived(applyOrthography(sourcePhrase, mode));
   let puzzle = $derived(
-    createSubstitutionPuzzle(phrase, difficulty, seededRandom([0.18, 0.72, 0.31, 0.94, 0.43, 0.09]))
+    createSubstitutionPuzzle(phrase, difficulty, seededRandomFromSeed(puzzleSeed))
   );
   let hintAllowance = $derived(getHintAllowance(difficulty));
   let lifeCount = $derived(getLifeCount(difficulty));
@@ -42,7 +41,12 @@
   let locked = $derived(livesMode === 'teoranta' && livesLeft <= 0);
 
   function setMode(nextMode: OrthographyMode): void {
+    if (mode === nextMode) {
+      return;
+    }
+
     mode = nextMode;
+    puzzleSeed += 1;
     resetProgress(getLifeCount(difficulty));
   }
 
@@ -126,13 +130,11 @@
     status = `nod: ${unsolvedNumber} = ${letter}`;
   }
 
-  function seededRandom(values: readonly number[]): () => number {
-    let index = 0;
-
+  function seededRandomFromSeed(seed: number): () => number {
+    let state = seed;
     return () => {
-      const value = values[index] ?? values.at(-1) ?? 0;
-      index += 1;
-      return value;
+      state = (state * 1664525 + 1013904223) % 4294967296;
+      return state / 4294967296;
     };
   }
 </script>
