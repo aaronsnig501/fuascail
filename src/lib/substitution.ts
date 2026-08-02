@@ -9,6 +9,7 @@ export const DIFFICULTY_STARTER_COUNTS = {
 } as const;
 
 export type DifficultyTier = keyof typeof DIFFICULTY_STARTER_COUNTS;
+export type OrthographyMode = 'digraf' | 'trad';
 export type RandomSource = () => number;
 
 export type NumberAssignment = {
