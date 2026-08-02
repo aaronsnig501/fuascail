@@ -22,6 +22,23 @@ export type SubstitutionPuzzle = NumberAssignment & {
   starterLetters: string[];
 };
 
+export type CipherLetterCell = {
+  kind: 'letter';
+  letter: string;
+  number: number;
+};
+
+export type CipherPunctuationCell = {
+  kind: 'punctuation';
+  value: string;
+};
+
+export type CipherCell = CipherLetterCell | CipherPunctuationCell;
+
+export type CipherWord = {
+  cells: CipherCell[];
+};
+
 const BASIC_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const SUBSTITUTION_LETTERS = new Set<string>([
   ...BASIC_LETTERS,
@@ -116,6 +133,39 @@ export function createSubstitutionPuzzle(
     starterNumbers,
     starterLetters
   };
+}
+
+export function buildCipherWords(
+  text: string,
+  letterToNumber: Readonly<Record<string, number>>
+): CipherWord[] {
+  return text
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .map((word) => ({
+      cells: Array.from(word, (character): CipherCell => {
+        const letter = normalizeSubstitutionLetter(character);
+
+        if (isSubstitutionLetter(letter)) {
+          const number = letterToNumber[letter];
+
+          if (number === undefined) {
+            throw new Error(`Missing substitution number for letter "${letter}".`);
+          }
+
+          return {
+            kind: 'letter',
+            letter,
+            number
+          };
+        }
+
+        return {
+          kind: 'punctuation',
+          value: character
+        };
+      })
+    }));
 }
 
 function shuffle<T>(values: readonly T[], random: RandomSource): T[] {
