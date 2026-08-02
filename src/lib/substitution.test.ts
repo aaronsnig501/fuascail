@@ -6,6 +6,7 @@ import {
   getContentBankReadiness,
   getDateKey,
   getProductionReadyContentBank,
+  isPublicDomainByAuthorDeathYear,
   pruneServedRecords,
   recordServedContent,
   selectContentForDate,
@@ -164,6 +165,10 @@ describe('content selection', () => {
       provenance_note: 'A',
       difficulty_tier: 'easy',
       source_rights_reference: 'Test fixture.',
+      source_url: 'candidate:test',
+      author_name: 'Test Author',
+      author_death_year: 1900,
+      public_domain_basis: 'Test author died in 1900.',
       linguistic_review: { status: 'pending' }
     },
     {
@@ -175,6 +180,10 @@ describe('content selection', () => {
       provenance_note: 'B',
       difficulty_tier: 'medium',
       source_rights_reference: 'Test fixture.',
+      source_url: 'candidate:test',
+      author_name: 'Test Author',
+      author_death_year: 1900,
+      public_domain_basis: 'Test author died in 1900.',
       linguistic_review: { status: 'pending' }
     },
     {
@@ -186,6 +195,10 @@ describe('content selection', () => {
       provenance_note: 'C',
       difficulty_tier: 'hard',
       source_rights_reference: 'Test fixture.',
+      source_url: 'candidate:test',
+      author_name: 'Test Author',
+      author_death_year: 1900,
+      public_domain_basis: 'Test author died in 1900.',
       linguistic_review: { status: 'pending' }
     }
   ];
@@ -200,6 +213,10 @@ describe('content selection', () => {
       'provenance_note',
       'difficulty_tier',
       'source_rights_reference',
+      'source_url',
+      'author_name',
+      'author_death_year',
+      'public_domain_basis',
       'linguistic_review'
     ]);
   });
@@ -218,6 +235,10 @@ describe('content selection', () => {
         translation_en: 'Text',
         provenance_note: 'Fixture note.',
         difficulty_tier: 'easy',
+        source_url: 'candidate:test',
+        author_name: 'Test Author',
+        author_death_year: 1900,
+        public_domain_basis: 'Test author died in 1900.',
         linguistic_review: { status: 'pending' }
       })
     ).toBe(false);
@@ -233,7 +254,11 @@ describe('content selection', () => {
     const signedOffFixture: PuzzleContent = {
       ...unsignedFixture,
       source_rights_reference:
-        'Dúchas.ie / National Folklore Collection, The Schools’ Collection; open data CC BY 4.0.',
+        'CELT: Corpus of Electronic Texts reference; underlying text public domain by author death year.',
+      source_url: 'https://celt.ucc.ie/document/E900007-006/',
+      author_name: 'Pádraic H. Pearse',
+      author_death_year: 1916,
+      public_domain_basis: 'Pádraic H. Pearse died in 1916; 70-year term satisfied by 1986.',
       linguistic_review: {
         status: 'signed_off',
         reviewer_name: 'Reviewer Name',
@@ -255,6 +280,13 @@ describe('content selection', () => {
     expect(readiness.readyForProduction).toBe(false);
     expect(readiness.signedOffEntries).toBe(0);
     expect(readiness.unsignedEntryIds).toEqual(CONTENT_BANK.map((item) => item.id));
+    expect(readiness.nonPublicDomainEntryIds).toEqual(CONTENT_BANK.map((item) => item.id));
+  });
+
+  it('uses author death year for public-domain eligibility', () => {
+    expect(isPublicDomainByAuthorDeathYear({ author_death_year: 1956 }, 2026)).toBe(true);
+    expect(isPublicDomainByAuthorDeathYear({ author_death_year: 1957 }, 2026)).toBe(false);
+    expect(isPublicDomainByAuthorDeathYear({ author_death_year: 0 }, 2026)).toBe(false);
   });
 
   it('selects deterministically from the same bank and date key', () => {

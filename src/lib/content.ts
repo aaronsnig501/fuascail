@@ -1,10 +1,14 @@
 import type { DifficultyTier } from './substitution';
 
 export const CONTENT_BANK_TARGET_SIZE = 120;
-export const APPROVED_TRADITIONAL_SOURCE_REFERENCES = [
-  'duchas.ie',
-  'National Folklore Collection',
-  'Dúchas'
+export const PUBLIC_DOMAIN_AUTHOR_DEATH_YEARS = 70;
+export const APPROVED_PUBLIC_DOMAIN_SOURCE_REFERENCES = [
+  'celt.ucc.ie',
+  'CELT',
+  'Corpus of Electronic Texts',
+  'Project Gutenberg',
+  'Internet Archive',
+  'Wikisource'
 ] as const;
 
 export type LinguisticReview =
@@ -28,6 +32,10 @@ export type PuzzleContent = {
   provenance_note: string;
   difficulty_tier: DifficultyTier;
   source_rights_reference: string;
+  source_url: string;
+  author_name: string;
+  author_death_year: number;
+  public_domain_basis: string;
   linguistic_review: LinguisticReview;
 };
 
@@ -38,6 +46,7 @@ export type ContentBankReadiness = {
   unsignedEntryIds: string[];
   unapprovedSourceEntryIds: string[];
   missingRightsReferenceIds: string[];
+  nonPublicDomainEntryIds: string[];
   readyForProduction: boolean;
 };
 
@@ -62,6 +71,10 @@ export const PUZZLE_CONTENT_JSON_SCHEMA = {
     'provenance_note',
     'difficulty_tier',
     'source_rights_reference',
+    'source_url',
+    'author_name',
+    'author_death_year',
+    'public_domain_basis',
     'linguistic_review'
   ],
   properties: {
@@ -73,6 +86,10 @@ export const PUZZLE_CONTENT_JSON_SCHEMA = {
     provenance_note: { type: 'string', minLength: 1 },
     difficulty_tier: { enum: ['easy', 'medium', 'hard', 'expert'] },
     source_rights_reference: { type: 'string', minLength: 1 },
+    source_url: { type: 'string', minLength: 1 },
+    author_name: { type: 'string', minLength: 1 },
+    author_death_year: { type: 'integer' },
+    public_domain_basis: { type: 'string', minLength: 1 },
     linguistic_review: {
       oneOf: [
         {
@@ -112,6 +129,11 @@ export const CONTENT_BANK: readonly PuzzleContent[] = [
     difficulty_tier: 'medium',
     source_rights_reference:
       'Traditional Irish proverb; candidate entry pending archival source verification.',
+    source_url: 'candidate:source-needed',
+    author_name: 'Unknown traditional source',
+    author_death_year: 0,
+    public_domain_basis:
+      'Candidate only: no author death year has been verified; not production eligible.',
     linguistic_review: { status: 'pending' }
   },
   {
@@ -125,6 +147,11 @@ export const CONTENT_BANK: readonly PuzzleContent[] = [
     difficulty_tier: 'hard',
     source_rights_reference:
       'Traditional Irish proverb; candidate entry pending archival source verification.',
+    source_url: 'candidate:source-needed',
+    author_name: 'Unknown traditional source',
+    author_death_year: 0,
+    public_domain_basis:
+      'Candidate only: no author death year has been verified; not production eligible.',
     linguistic_review: { status: 'pending' }
   },
   {
@@ -138,6 +165,11 @@ export const CONTENT_BANK: readonly PuzzleContent[] = [
     difficulty_tier: 'easy',
     source_rights_reference:
       'Traditional Irish proverb; candidate entry pending archival source verification.',
+    source_url: 'candidate:source-needed',
+    author_name: 'Unknown traditional source',
+    author_death_year: 0,
+    public_domain_basis:
+      'Candidate only: no author death year has been verified; not production eligible.',
     linguistic_review: { status: 'pending' }
   },
   {
@@ -151,6 +183,11 @@ export const CONTENT_BANK: readonly PuzzleContent[] = [
     difficulty_tier: 'medium',
     source_rights_reference:
       'Traditional Irish proverb; candidate entry pending archival source verification.',
+    source_url: 'candidate:source-needed',
+    author_name: 'Unknown traditional source',
+    author_death_year: 0,
+    public_domain_basis:
+      'Candidate only: no author death year has been verified; not production eligible.',
     linguistic_review: { status: 'pending' }
   },
   {
@@ -164,6 +201,11 @@ export const CONTENT_BANK: readonly PuzzleContent[] = [
     difficulty_tier: 'medium',
     source_rights_reference:
       'Contemporary Irish-language saying in common circulation; included as user-curated app content.',
+    source_url: 'candidate:source-needed',
+    author_name: 'Unknown contemporary source',
+    author_death_year: 0,
+    public_domain_basis:
+      'Candidate only: no author death year has been verified; not production eligible.',
     linguistic_review: { status: 'pending' }
   }
 ];
@@ -184,34 +226,45 @@ export function validatePuzzleContent(item: unknown): item is PuzzleContent {
     isNonEmptyString(candidate.provenance_note) &&
     isDifficultyTier(candidate.difficulty_tier) &&
     isNonEmptyString(candidate.source_rights_reference) &&
+    isNonEmptyString(candidate.source_url) &&
+    isNonEmptyString(candidate.author_name) &&
+    typeof candidate.author_death_year === 'number' &&
+    Number.isInteger(candidate.author_death_year) &&
+    isNonEmptyString(candidate.public_domain_basis) &&
     isLinguisticReview(candidate.linguistic_review)
   );
 }
 
 export function getProductionReadyContentBank(
-  bank: readonly PuzzleContent[]
+  bank: readonly PuzzleContent[],
+  asOfYear = new Date().getUTCFullYear()
 ): PuzzleContent[] {
   return bank.filter(
     (item) =>
       validatePuzzleContent(item) &&
       item.linguistic_review.status === 'signed_off' &&
-      hasApprovedTraditionalSourceReference(item)
+      hasApprovedPublicDomainSourceReference(item) &&
+      isPublicDomainByAuthorDeathYear(item, asOfYear)
   );
 }
 
 export function getContentBankReadiness(
   bank: readonly PuzzleContent[],
-  targetSize = CONTENT_BANK_TARGET_SIZE
+  targetSize = CONTENT_BANK_TARGET_SIZE,
+  asOfYear = new Date().getUTCFullYear()
 ): ContentBankReadiness {
-  const signedOffEntries = getProductionReadyContentBank(bank);
+  const signedOffEntries = getProductionReadyContentBank(bank, asOfYear);
   const unsignedEntryIds = bank
     .filter((item) => item.linguistic_review.status !== 'signed_off')
     .map((item) => item.id);
   const unapprovedSourceEntryIds = bank
-    .filter((item) => !hasApprovedTraditionalSourceReference(item))
+    .filter((item) => !hasApprovedPublicDomainSourceReference(item))
     .map((item) => item.id);
   const missingRightsReferenceIds = bank
     .filter((item) => item.source_rights_reference.trim().length === 0)
+    .map((item) => item.id);
+  const nonPublicDomainEntryIds = bank
+    .filter((item) => !isPublicDomainByAuthorDeathYear(item, asOfYear))
     .map((item) => item.id);
 
   return {
@@ -221,12 +274,21 @@ export function getContentBankReadiness(
     unsignedEntryIds,
     unapprovedSourceEntryIds,
     missingRightsReferenceIds,
+    nonPublicDomainEntryIds,
     readyForProduction:
       signedOffEntries.length >= targetSize &&
       unsignedEntryIds.length === 0 &&
       unapprovedSourceEntryIds.length === 0 &&
-      missingRightsReferenceIds.length === 0
+      missingRightsReferenceIds.length === 0 &&
+      nonPublicDomainEntryIds.length === 0
   };
+}
+
+export function isPublicDomainByAuthorDeathYear(
+  item: Pick<PuzzleContent, 'author_death_year'>,
+  asOfYear = new Date().getUTCFullYear()
+): boolean {
+  return item.author_death_year > 0 && asOfYear - item.author_death_year >= PUBLIC_DOMAIN_AUTHOR_DEATH_YEARS;
 }
 
 export function getDateKey(date: Date): string {
@@ -353,11 +415,11 @@ function isLinguisticReview(value: unknown): value is LinguisticReview {
   );
 }
 
-function hasApprovedTraditionalSourceReference(item: PuzzleContent): boolean {
-  return APPROVED_TRADITIONAL_SOURCE_REFERENCES.some((sourceReference) =>
-    item.source_rights_reference.toLocaleLowerCase('en').includes(
-      sourceReference.toLocaleLowerCase('en')
-    )
+function hasApprovedPublicDomainSourceReference(item: PuzzleContent): boolean {
+  const sourceText = `${item.source_rights_reference} ${item.source_url}`.toLocaleLowerCase('en');
+
+  return APPROVED_PUBLIC_DOMAIN_SOURCE_REFERENCES.some((sourceReference) =>
+    sourceText.includes(sourceReference.toLocaleLowerCase('en'))
   );
 }
 
