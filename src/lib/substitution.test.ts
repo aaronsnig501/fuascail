@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CONTENT_BANK,
+  PUZZLE_CONTENT_JSON_SCHEMA,
   getDateKey,
   pruneServedRecords,
   recordServedContent,
   selectContentForDate,
-  type ContentBankItem
+  validatePuzzleContent,
+  type PuzzleContent
 } from './content';
 import {
   applyOrthography,
@@ -148,11 +151,69 @@ describe('substitution logic', () => {
 });
 
 describe('content selection', () => {
-  const bank: readonly ContentBankItem[] = [
-    { id: 'a', text: 'A', translation: 'A', provenanceNote: 'A' },
-    { id: 'b', text: 'B', translation: 'B', provenanceNote: 'B' },
-    { id: 'c', text: 'C', translation: 'C', provenanceNote: 'C' }
+  const bank: readonly PuzzleContent[] = [
+    {
+      id: 'a',
+      category: 'test',
+      text_digraf: 'A',
+      text_trad: 'A',
+      translation_en: 'A',
+      provenance_note: 'A',
+      difficulty_tier: 'easy',
+      source_rights_reference: 'Test fixture.'
+    },
+    {
+      id: 'b',
+      category: 'test',
+      text_digraf: 'B',
+      text_trad: 'B',
+      translation_en: 'B',
+      provenance_note: 'B',
+      difficulty_tier: 'medium',
+      source_rights_reference: 'Test fixture.'
+    },
+    {
+      id: 'c',
+      category: 'test',
+      text_digraf: 'C',
+      text_trad: 'C',
+      translation_en: 'C',
+      provenance_note: 'C',
+      difficulty_tier: 'hard',
+      source_rights_reference: 'Test fixture.'
+    }
   ];
+
+  it('defines the requested required JSON schema fields', () => {
+    expect(PUZZLE_CONTENT_JSON_SCHEMA.required).toEqual([
+      'id',
+      'category',
+      'text_digraf',
+      'text_trad',
+      'translation_en',
+      'provenance_note',
+      'difficulty_tier',
+      'source_rights_reference'
+    ]);
+  });
+
+  it('validates every bank item against the puzzle schema', () => {
+    expect(CONTENT_BANK.every(validatePuzzleContent)).toBe(true);
+  });
+
+  it('requires a source and rights reference', () => {
+    expect(
+      validatePuzzleContent({
+        id: 'missing-rights',
+        category: 'test',
+        text_digraf: 'Téacs',
+        text_trad: 'Téacs',
+        translation_en: 'Text',
+        provenance_note: 'Fixture note.',
+        difficulty_tier: 'easy'
+      })
+    ).toBe(false);
+  });
 
   it('selects deterministically from the same bank and date key', () => {
     const firstSelection = selectContentForDate(bank, '2026-08-02');
