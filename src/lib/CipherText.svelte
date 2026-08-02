@@ -5,6 +5,7 @@
   export let text = '';
   export let letterToNumber: Readonly<Record<string, number>> = {};
   export let numberToLetter: Readonly<Record<number, string>> = {};
+  export let guesses: Readonly<Record<number, string>> = {};
   export let solvedNumbers: ReadonlySet<number> | readonly number[] = [];
   export let selectedNumber: number | null = null;
   export let disabled = false;
@@ -58,7 +59,7 @@
                 solved ? 'border-red-900 text-red-400' : ''
               ]}
             >
-              {solved ? numberToLetter[cell.number] ?? cell.letter : ''}
+              {solved ? numberToLetter[cell.number] ?? cell.letter : guesses[cell.number] ?? ''}
             </span>
             <span class="mt-0.5 font-mono text-[9px] leading-none text-stone-500">{cell.number}</span>
           </button>

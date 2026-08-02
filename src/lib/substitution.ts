@@ -1,16 +1,34 @@
 export const FADA_LETTERS = ['Á', 'É', 'Í', 'Ó', 'Ú'] as const;
 export const DOT_LETTERS = ['Ḃ', 'Ċ', 'Ḋ', 'Ḟ', 'Ġ', 'Ṁ', 'Ṗ', 'Ṡ', 'Ṫ'] as const;
 
-export const DIFFICULTY_STARTER_COUNTS = {
-  easy: 5,
-  medium: 3,
-  hard: 1,
-  expert: 0
+export const DIFFICULTY_SETTINGS = {
+  easy: {
+    starterLetterCount: 5,
+    hintAllowance: 3,
+    lifeCount: 5
+  },
+  medium: {
+    starterLetterCount: 3,
+    hintAllowance: 2,
+    lifeCount: 3
+  },
+  hard: {
+    starterLetterCount: 1,
+    hintAllowance: 1,
+    lifeCount: 2
+  },
+  expert: {
+    starterLetterCount: 0,
+    hintAllowance: 0,
+    lifeCount: 1
+  }
 } as const;
 
-export type DifficultyTier = keyof typeof DIFFICULTY_STARTER_COUNTS;
+export type DifficultyTier = keyof typeof DIFFICULTY_SETTINGS;
+export type LivesMode = 'saor' | 'teoranta';
 export type OrthographyMode = 'digraf' | 'trad';
 export type RandomSource = () => number;
+export type WrongGuessesByNumber = Record<number, readonly string[]>;
 
 export type NumberAssignment = {
   letterToNumber: Record<string, number>;
@@ -38,6 +56,13 @@ export type CipherCell = CipherLetterCell | CipherPunctuationCell;
 
 export type CipherWord = {
   cells: CipherCell[];
+};
+
+export type GuessEvaluation = {
+  letter: string;
+  correct: boolean;
+  newWrongGuess: boolean;
+  wrongGuessesByNumber: WrongGuessesByNumber;
 };
 
 const BASIC_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -101,10 +126,18 @@ export function getStarterCount(
   totalLetters: number,
   difficulty: DifficultyTier
 ): number {
-  const requestedCount = DIFFICULTY_STARTER_COUNTS[difficulty];
+  const requestedCount = DIFFICULTY_SETTINGS[difficulty].starterLetterCount;
   const maxStarterCount = Math.max(0, totalLetters - 3);
 
   return Math.min(requestedCount, maxStarterCount);
+}
+
+export function getHintAllowance(difficulty: DifficultyTier): number {
+  return DIFFICULTY_SETTINGS[difficulty].hintAllowance;
+}
+
+export function getLifeCount(difficulty: DifficultyTier): number {
+  return DIFFICULTY_SETTINGS[difficulty].lifeCount;
 }
 
 export function selectStarterNumbers(
@@ -167,6 +200,40 @@ export function buildCipherWords(
         };
       })
     }));
+}
+
+export function evaluateGuess(
+  numberToLetter: Readonly<Record<number, string>>,
+  wrongGuessesByNumber: WrongGuessesByNumber,
+  number: number,
+  rawLetter: string
+): GuessEvaluation {
+  const letter = normalizeSubstitutionLetter(rawLetter);
+  const correct = numberToLetter[number] === letter;
+
+  if (correct) {
+    return {
+      letter,
+      correct,
+      newWrongGuess: false,
+      wrongGuessesByNumber
+    };
+  }
+
+  const previousWrongGuesses = wrongGuessesByNumber[number] ?? [];
+  const newWrongGuess = !previousWrongGuesses.includes(letter);
+
+  return {
+    letter,
+    correct,
+    newWrongGuess,
+    wrongGuessesByNumber: newWrongGuess
+      ? {
+          ...wrongGuessesByNumber,
+          [number]: [...previousWrongGuesses, letter]
+        }
+      : wrongGuessesByNumber
+  };
 }
 
 function shuffle<T>(values: readonly T[], random: RandomSource): T[] {

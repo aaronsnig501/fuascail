@@ -3,7 +3,10 @@ import {
   buildCipherWords,
   createNumberAssignment,
   createSubstitutionPuzzle,
+  evaluateGuess,
   extractUniqueLetters,
+  getHintAllowance,
+  getLifeCount,
   getStarterCount,
   isSubstitutionLetter,
   selectStarterNumbers
@@ -72,6 +75,17 @@ describe('substitution logic', () => {
     expect(getStarterCount(3, 'easy')).toBe(0);
   });
 
+  it('drives hint allowance and life count from the same difficulty setting', () => {
+    expect(getHintAllowance('easy')).toBe(3);
+    expect(getLifeCount('easy')).toBe(5);
+    expect(getHintAllowance('medium')).toBe(2);
+    expect(getLifeCount('medium')).toBe(3);
+    expect(getHintAllowance('hard')).toBe(1);
+    expect(getLifeCount('hard')).toBe(2);
+    expect(getHintAllowance('expert')).toBe(0);
+    expect(getLifeCount('expert')).toBe(1);
+  });
+
   it('selects random starter numbers using the difficulty tier count', () => {
     expect(selectStarterNumbers([1, 2, 3, 4, 5], 'medium', seededRandom([0, 0, 0, 0]))).toEqual([
       2,
@@ -101,5 +115,18 @@ describe('substitution logic', () => {
         ]
       }
     ]);
+  });
+
+  it('marks only genuinely new wrong letters for a number as life-burning mistakes', () => {
+    const firstWrong = evaluateGuess({ 7: 'A' }, {}, 7, 'B');
+    const repeatedWrong = evaluateGuess({ 7: 'A' }, firstWrong.wrongGuessesByNumber, 7, 'B');
+    const newWrong = evaluateGuess({ 7: 'A' }, repeatedWrong.wrongGuessesByNumber, 7, 'C');
+    const correct = evaluateGuess({ 7: 'A' }, newWrong.wrongGuessesByNumber, 7, 'A');
+
+    expect(firstWrong).toMatchObject({ correct: false, newWrongGuess: true });
+    expect(repeatedWrong).toMatchObject({ correct: false, newWrongGuess: false });
+    expect(newWrong).toMatchObject({ correct: false, newWrongGuess: true });
+    expect(correct).toMatchObject({ correct: true, newWrongGuess: false });
+    expect(newWrong.wrongGuessesByNumber).toEqual({ 7: ['B', 'C'] });
   });
 });
