@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyOrthography,
   buildCipherWords,
   createNumberAssignment,
   createSubstitutionPuzzle,
@@ -57,6 +58,14 @@ describe('substitution logic', () => {
       'F'
     ]);
     expect(isSubstitutionLetter('ċ')).toBe(true);
+  });
+
+  it('applies the fixed nine-pair dot-above lookup before puzzle generation', () => {
+    expect(applyOrthography('bh ch dh fh gh mh ph sh th', 'trad')).toBe(
+      'ḃ ċ ḋ ḟ ġ ṁ ṗ ṡ ṫ'
+    );
+    expect(applyOrthography('Bh Ch DH', 'trad')).toBe('Ḃ Ċ Ḋ');
+    expect(applyOrthography('bh ch dh', 'digraf')).toBe('bh ch dh');
   });
 
   it('assigns shuffled numbers to letters without changing the letter set', () => {
