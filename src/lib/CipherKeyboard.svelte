@@ -39,10 +39,10 @@
         <button
           type="button"
           class={[
-            'h-9 w-7 border border-stone-700 bg-[#2f2820] text-center font-mono text-[13px] font-medium text-stone-100 transition hover:bg-[#3a3126] focus:outline-none focus-visible:border-[#c1442c]',
+            'font-utility h-9 w-7 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-[13px] font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
             isUsed(letter) ? 'opacity-35' : ''
           ]}
-          aria-label={`Letter ${letter}`}
+          aria-label={`Litir ${letter}`}
           disabled={disabled}
           onclick={() => pressLetter(letter)}
         >
@@ -57,10 +57,10 @@
       <button
         type="button"
         class={[
-          'h-9 w-8 border border-stone-700 bg-[#2f2820] text-center font-mono text-xs font-medium text-stone-100 transition hover:bg-[#3a3126] focus:outline-none focus-visible:border-[#c1442c]',
+          'font-utility h-9 w-8 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-xs font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
           isUsed(letter) ? 'opacity-35' : ''
         ]}
-        aria-label={`Letter ${letter}`}
+        aria-label={`Litir ${letter}`}
         disabled={disabled}
         onclick={() => pressLetter(letter)}
       >
@@ -75,10 +75,10 @@
         <button
           type="button"
           class={[
-            'h-9 w-8 border border-stone-700 bg-[#2f2820] text-center font-mono text-xs font-medium text-stone-100 transition hover:bg-[#3a3126] focus:outline-none focus-visible:border-[#c1442c]',
+            'font-utility h-9 w-8 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-xs font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
             isUsed(letter) ? 'opacity-35' : ''
           ]}
-          aria-label={`Letter ${letter}`}
+          aria-label={`Litir ${letter}`}
           disabled={disabled}
           onclick={() => pressLetter(letter)}
         >
