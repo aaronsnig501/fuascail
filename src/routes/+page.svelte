@@ -22,6 +22,12 @@
 
   const servedContentStorageKey = 'fuascail.recentlyServedContent';
   const todayKey = getDateKey(new Date());
+  const difficultyLabels: Record<DifficultyTier, string> = {
+    easy: 'Éasca',
+    medium: 'Meánach',
+    hard: 'Crua',
+    expert: 'Saineolaí'
+  };
 
   let mode = $state<OrthographyMode>('digraf');
   let difficulty = $state<DifficultyTier>('medium');
@@ -34,7 +40,6 @@
   let hintsUsed = $state(0);
   let livesLeft = $state(getLifeCount('medium'));
   let status = $state('roghnaigh cill chun tosú');
-  let showTranslation = $state(false);
 
   let phrase = $derived(mode === 'trad' ? selectedContent.text_trad : selectedContent.text_digraf);
   let puzzle = $derived(
@@ -101,7 +106,6 @@
     hintsUsed = 0;
     livesLeft = nextLivesLeft;
     status = 'roghnaigh cill chun tosú';
-    showTranslation = false;
   }
 
   function guessLetter(letter: string): void {
@@ -213,16 +217,16 @@
   <title>Fuascail</title>
 </svelte:head>
 
-<main class="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,#241f19_0%,#1c1916_62%)] px-3 py-7 text-stone-100">
-  <section class="w-full max-w-[460px] border border-stone-700 bg-[#262019] px-5 py-6 shadow-2xl [border-top:3px_solid_#c1442c]">
+<main class="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,#241f19_0%,var(--charcoal-deep)_62%)] px-3 py-7 text-[var(--cream)]">
+  <section class="w-full max-w-[460px] border border-[var(--charcoal-line)] bg-[var(--charcoal-surface)] px-5 py-6 shadow-2xl [border-top:3px_solid_var(--vermilion)]">
     <div class="mb-3 flex items-center justify-between gap-3">
-      <p class="font-mono text-[11px] tracking-[0.14em] text-stone-400 uppercase">Inniu · Seanfhocal</p>
-      <div class="flex border border-stone-700 font-mono text-[10px] tracking-[0.08em] uppercase">
+      <p class="font-utility text-[11px] tracking-[0.14em] text-[var(--cream-dim)] uppercase">Inniu · Seanfhocal</p>
+      <div class="font-utility flex border border-[var(--charcoal-line)] text-[10px] tracking-[0.08em] uppercase">
         <button
           type="button"
           class={[
-            'px-2.5 py-1 text-stone-400',
-            mode === 'digraf' ? 'bg-[#6f2a1c] text-stone-100' : ''
+            'px-2.5 py-1 text-[var(--cream-dim)]',
+            mode === 'digraf' ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
           ]}
           aria-pressed={mode === 'digraf'}
           onclick={() => setMode('digraf')}
@@ -232,8 +236,8 @@
         <button
           type="button"
           class={[
-            'px-2.5 py-1 text-stone-400',
-            mode === 'trad' ? 'bg-[#6f2a1c] text-stone-100' : ''
+            'px-2.5 py-1 text-[var(--cream-dim)]',
+            mode === 'trad' ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
           ]}
           aria-pressed={mode === 'trad'}
           onclick={() => setMode('trad')}
@@ -244,28 +248,28 @@
     </div>
 
     <div class="mb-4 flex items-center justify-between gap-3">
-      <div class="flex border border-stone-700 font-mono text-[10px] tracking-[0.08em] uppercase">
+      <div class="font-utility flex border border-[var(--charcoal-line)] text-[10px] tracking-[0.08em] uppercase">
         {#each Object.keys(DIFFICULTY_SETTINGS) as tier}
           <button
             type="button"
             class={[
-              'px-2 py-1 text-stone-400',
-              difficulty === tier ? 'bg-[#6f2a1c] text-stone-100' : ''
+              'px-2 py-1 text-[var(--cream-dim)]',
+              difficulty === tier ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
             ]}
             aria-pressed={difficulty === tier}
             onclick={() => setDifficulty(tier as DifficultyTier)}
           >
-            {tier}
+            {difficultyLabels[tier as DifficultyTier]}
           </button>
         {/each}
       </div>
 
-      <div class="flex border border-stone-700 font-mono text-[10px] tracking-[0.08em] uppercase">
+      <div class="font-utility flex border border-[var(--charcoal-line)] text-[10px] tracking-[0.08em] uppercase">
         <button
           type="button"
           class={[
-            'px-2.5 py-1 text-stone-400',
-            livesMode === 'saor' ? 'bg-[#6f2a1c] text-stone-100' : ''
+            'px-2.5 py-1 text-[var(--cream-dim)]',
+            livesMode === 'saor' ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
           ]}
           aria-pressed={livesMode === 'saor'}
           onclick={() => setLivesMode('saor')}
@@ -275,8 +279,8 @@
         <button
           type="button"
           class={[
-            'px-2.5 py-1 text-stone-400',
-            livesMode === 'teoranta' ? 'bg-[#6f2a1c] text-stone-100' : ''
+            'px-2.5 py-1 text-[var(--cream-dim)]',
+            livesMode === 'teoranta' ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
           ]}
           aria-pressed={livesMode === 'teoranta'}
           onclick={() => setLivesMode('teoranta')}
@@ -286,7 +290,7 @@
       </div>
     </div>
 
-    <div class="mb-4 flex items-center justify-between font-mono text-[10px] tracking-[0.08em] text-stone-500 uppercase">
+    <div class="font-utility mb-4 flex items-center justify-between text-[10px] tracking-[0.08em] text-[var(--cream-faint)] uppercase">
       <p>Nodanna {remainingHints}/{hintAllowance}</p>
       {#if livesMode === 'teoranta'}
         <p>Saolta {livesLeft}/{lifeCount}</p>
@@ -295,7 +299,7 @@
       {/if}
     </div>
 
-    <h1 class="mb-5 text-center text-2xl font-normal tracking-wide text-stone-100">Fuascail an Seanfhocal</h1>
+    <h1 class="font-display mb-5 text-center text-2xl font-normal tracking-wide text-[var(--cream)]">Fuascail an Seanfhocal</h1>
 
     <CipherText
       text={phrase}
@@ -314,32 +318,17 @@
       onpress={guessLetter}
     />
 
-    <div class="mt-4 border-y border-stone-700 px-2 py-3">
+    <div class="mt-4 border-y border-[var(--charcoal-line)] px-2 py-3">
       {#if resultKind === null}
-        <p class="text-center font-mono text-xs text-stone-400">{status}</p>
+        <p class="font-utility text-center text-xs text-[var(--cream-dim)]">{status}</p>
       {:else}
         <div class="text-center">
-          <p class="mb-3 font-mono text-[10px] tracking-[0.14em] text-[#d95a3f] uppercase">
+          <p class="font-utility mb-3 text-[10px] tracking-[0.14em] text-[var(--vermilion-bright)] uppercase">
             {resultEyebrow}
           </p>
-          <p class="mb-2 text-2xl leading-snug text-stone-100">{phrase}</p>
+          <p class="font-display mb-4 text-2xl leading-snug text-[var(--cream)]">{phrase}</p>
 
-          <button
-            type="button"
-            class="mb-4 border border-stone-700 px-3 py-1.5 font-mono text-[10px] tracking-[0.08em] text-stone-400 uppercase"
-            aria-pressed={showTranslation}
-            onclick={() => {
-              showTranslation = !showTranslation;
-            }}
-          >
-            Aistriúchán
-          </button>
-
-          {#if showTranslation}
-            <p class="mb-4 font-mono text-xs text-stone-400">{selectedContent.translation_en}</p>
-          {/if}
-
-          <p class="border-t border-stone-700 pt-4 text-left text-sm leading-6 text-stone-400">
+          <p class="border-t border-[var(--charcoal-line)] pt-4 text-left text-sm leading-6 text-[var(--cream-dim)]">
             {selectedContent.provenance_note}
           </p>
         </div>
@@ -349,7 +338,7 @@
     <div class="mt-3 flex gap-2">
       <button
         type="button"
-        class="flex-1 border border-stone-700 px-3 py-2 font-mono text-[10.5px] tracking-[0.06em] text-stone-400 uppercase disabled:opacity-35"
+        class="font-utility flex-1 border border-[var(--charcoal-line)] px-3 py-2 text-[10.5px] tracking-[0.06em] text-[var(--cream-dim)] uppercase disabled:opacity-35"
         disabled={locked || remainingHints <= 0}
         onclick={useHint}
       >
@@ -357,13 +346,13 @@
       </button>
       <button
         type="button"
-        class="flex-1 border border-stone-700 px-3 py-2 font-mono text-[10.5px] tracking-[0.06em] text-stone-400 uppercase"
+        class="font-utility flex-1 border border-[var(--charcoal-line)] px-3 py-2 text-[10.5px] tracking-[0.06em] text-[var(--cream-dim)] uppercase"
         onclick={() => resetProgress(getLifeCount(difficulty))}
       >
         Athshocraigh
       </button>
     </div>
 
-    <p class="mt-3 text-center font-mono text-[10px] text-stone-500">gach uimhir = an litir chéanna, i gcónaí</p>
+    <p class="font-utility mt-3 text-center text-[10px] text-[var(--cream-faint)]">gach uimhir = an litir chéanna, i gcónaí</p>
   </section>
 </main>
