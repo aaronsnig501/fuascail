@@ -10,7 +10,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
-    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.2",
     "@tailwindcss/vite": "^4.3.3",
     "svelte": "^5.56.8",
