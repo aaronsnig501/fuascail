@@ -4,6 +4,12 @@
   import CipherKeyboard from '$lib/CipherKeyboard.svelte';
   import CipherText from '$lib/CipherText.svelte';
   import {
+    initializePurchases,
+    purchaseRemoveAds,
+    purchaseState,
+    restorePurchases
+  } from '$lib/purchases';
+  import {
     CONTENT_BANK,
     RECENT_CONTENT_WINDOW_DAYS,
     getDateKey,
@@ -68,7 +74,9 @@
   let resultEyebrow = $derived(resultKind === 'solved' ? 'Réitithe' : 'Seo é');
 
   onMount(() => {
-    void initializeAds();
+    void initializePurchases().finally(() => {
+      void initializeAds();
+    });
 
     const servedRecords = loadServedContentRecords();
     selectedContent = selectContentForDate(CONTENT_BANK, todayKey, servedRecords);
@@ -369,6 +377,33 @@
         Athshocraigh
       </button>
     </div>
+
+    <div class="font-utility mt-3 flex items-center gap-2 border-t border-[var(--charcoal-line)] pt-3 text-[10px] tracking-[0.05em] text-[var(--cream-faint)] uppercase">
+      {#if $purchaseState.removeAds}
+        <p class="flex-1 text-center text-[var(--cream-dim)]">Fógraí bainte</p>
+      {:else}
+        <button
+          type="button"
+          class="flex-1 border border-[var(--charcoal-line)] px-2 py-2 text-[var(--cream-dim)] uppercase disabled:opacity-35"
+          disabled={$purchaseState.busy || $purchaseState.available === 'unavailable'}
+          onclick={purchaseRemoveAds}
+        >
+          Bain fógraí{#if $purchaseState.price !== null} · {$purchaseState.price}{/if}
+        </button>
+        <button
+          type="button"
+          class="border border-[var(--charcoal-line)] px-2 py-2 text-[var(--cream-dim)] uppercase disabled:opacity-35"
+          disabled={$purchaseState.busy || $purchaseState.available === 'unavailable'}
+          onclick={restorePurchases}
+        >
+          Athchóirigh
+        </button>
+      {/if}
+    </div>
+
+    {#if $purchaseState.message !== null && !$purchaseState.removeAds}
+      <p class="font-utility mt-2 text-center text-[10px] text-[var(--cream-faint)]">{$purchaseState.message}</p>
+    {/if}
 
     <p class="font-utility mt-3 text-center text-[10px] text-[var(--cream-faint)]">gach uimhir = an litir chéanna, i gcónaí</p>
   </section>

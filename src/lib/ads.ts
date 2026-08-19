@@ -1,5 +1,6 @@
 import { AdMob, MaxAdContentRating } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
+import { adsRemoved } from './purchases';
 
 const puzzleCompletionCountStorageKey = 'fuascail.ads.puzzleCompletionCount';
 const defaultInterstitialFrequency = 3;
@@ -140,7 +141,11 @@ async function prepareInterstitial(): Promise<void> {
 }
 
 function adsAreEnabled(): boolean {
-  return Capacitor.isNativePlatform() && import.meta.env.VITE_ADMOB_ENABLED !== 'false';
+  return (
+    Capacitor.isNativePlatform() &&
+    import.meta.env.VITE_ADMOB_ENABLED !== 'false' &&
+    !adsRemoved()
+  );
 }
 
 function personalizedAdsWanted(): boolean {
