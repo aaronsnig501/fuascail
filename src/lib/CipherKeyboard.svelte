@@ -38,7 +38,7 @@
 
 <div
   class:opacity-35={disabled}
-  class="flex flex-col gap-1.5"
+  class="cipher-keyboard flex flex-col gap-1.5"
   role="group"
   aria-label="Méarchlár litreacha don tomhas"
   aria-disabled={disabled}
@@ -49,7 +49,7 @@
         <button
           type="button"
           class={[
-            'font-utility h-9 w-7 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-[13px] font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
+            'cipher-key font-utility h-9 w-7 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-[13px] font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
             isUsed(letter) ? 'opacity-35' : ''
           ]}
           aria-label={getLetterLabel(letter)}
@@ -67,7 +67,7 @@
       <button
         type="button"
         class={[
-          'font-utility h-9 w-8 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-xs font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
+          'cipher-key cipher-key-wide font-utility h-9 w-8 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-xs font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
           isUsed(letter) ? 'opacity-35' : ''
         ]}
         aria-label={getLetterLabel(letter)}
@@ -85,7 +85,7 @@
         <button
           type="button"
           class={[
-            'font-utility h-9 w-8 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-xs font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
+            'cipher-key cipher-key-wide font-utility h-9 w-8 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-xs font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
             isUsed(letter) ? 'opacity-35' : ''
           ]}
           aria-label={getLetterLabel(letter)}

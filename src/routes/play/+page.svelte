@@ -274,19 +274,25 @@
   <title>Fuascail</title>
 </svelte:head>
 
-<main class="app-shell flex items-center justify-center bg-[radial-gradient(ellipse_at_top,#241f19_0%,var(--charcoal-deep)_62%)] text-[var(--cream)]">
+<main class="app-shell flex items-center justify-center bg-[var(--charcoal-deep)] text-[var(--cream)]">
   <section
-    class="puzzle-card w-full max-w-[460px] border border-[var(--charcoal-line)] bg-[var(--charcoal-surface)] px-5 py-6 shadow-2xl [border-top:3px_solid_var(--vermilion)]"
+    class="app-surface puzzle-card w-full max-w-[460px] border border-[var(--charcoal-line)] bg-[var(--charcoal-surface)] px-5 py-6 shadow-2xl [border-top:3px_solid_var(--vermilion)] lg:max-w-[1120px] lg:px-0 lg:py-0 xl:max-w-[1240px]"
     aria-labelledby="puzzle-title"
   >
     <p id="cipher-instructions" class="sr-only">
       Roghnaigh cill uimhrithe sa téacs rúin, ansin roghnaigh litir ón méarchlár ar an scáileán nó brúigh litir ar an méarchlár fisiciúil.
     </p>
-    <a class="font-utility mb-4 inline-block text-[10px] tracking-[0.08em] text-[var(--cream-dim)] uppercase" href="/">Baile</a>
+    <a class="font-display mb-5 inline-block text-2xl text-[var(--cream)] lg:mb-7 lg:text-3xl" href="/" aria-label="Fuascail, téigh go dtí an baile">Fuascail</a>
 
-    <div class="mb-3 flex items-center justify-between gap-3">
-      <p class="font-utility text-[11px] tracking-[0.14em] text-[var(--cream-dim)] uppercase">Inniu · Seanfhocal</p>
-      <div class="font-utility flex border border-[var(--charcoal-line)] text-[10px] tracking-[0.08em] uppercase">
+    <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <p class="font-utility mb-3 text-[11px] tracking-[0.14em] text-[var(--cream-dim)] uppercase">Inniu · Seanfhocal</p>
+        <h1 id="puzzle-title" class="font-display text-center text-2xl font-normal tracking-wide text-[var(--cream)] lg:text-left lg:text-4xl">
+          Fuascail an Seanfhocal
+        </h1>
+      </div>
+
+      <div class="font-utility flex justify-center border border-[var(--charcoal-line)] text-[10px] tracking-[0.08em] uppercase lg:justify-start">
         <button
           type="button"
           class={[
@@ -312,145 +318,149 @@
       </div>
     </div>
 
-    <div class="mb-4 flex items-center justify-between gap-3">
-      <div class="font-utility flex border border-[var(--charcoal-line)] text-[10px] tracking-[0.08em] uppercase">
-        {#each Object.keys(DIFFICULTY_SETTINGS) as tier}
+    <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div class="lg:flex lg:min-h-[560px] lg:flex-col lg:justify-center">
+        <CipherText
+          text={phrase}
+          letterToNumber={puzzle.letterToNumber}
+          numberToLetter={puzzle.numberToLetter}
+          {guesses}
+          {solvedNumbers}
+          bind:selectedNumber
+          disabled={locked}
+        />
+
+        <div class="mt-4 border-y border-[var(--charcoal-line)] px-2 py-3 lg:mt-6 lg:px-4 lg:py-5">
+          {#if resultKind === null}
+            <p class="font-utility text-center text-xs text-[var(--cream-dim)] lg:text-sm" aria-live="polite">{status}</p>
+          {:else}
+            <div
+              class="text-center"
+              role="dialog"
+              aria-modal="false"
+              aria-labelledby="reveal-title"
+              aria-describedby="reveal-answer reveal-note"
+            >
+              <p id="reveal-title" class="font-utility mb-3 text-[10px] tracking-[0.14em] text-[var(--vermilion-bright)] uppercase">
+                {resultEyebrow}
+              </p>
+              <p id="reveal-answer" class="font-display mb-4 text-2xl leading-snug text-[var(--cream)] lg:text-4xl">{phrase}</p>
+
+              <p id="reveal-note" class="border-t border-[var(--charcoal-line)] pt-4 text-left text-sm leading-6 text-[var(--cream-dim)] lg:text-base lg:leading-7">
+                {selectedContent.provenance_note}
+              </p>
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <aside class="mt-5 border-t border-[var(--charcoal-line)] pt-5 lg:mt-0 lg:border-t-0 lg:border-l lg:pl-8 lg:pt-0" aria-label="Rialuithe puzail">
+        <div class="mb-4 flex items-center justify-between gap-3 lg:flex-col lg:items-stretch">
+          <div class="font-utility flex border border-[var(--charcoal-line)] text-[10px] tracking-[0.08em] uppercase">
+            {#each Object.keys(DIFFICULTY_SETTINGS) as tier}
+              <button
+                type="button"
+                class={[
+                  'flex-1 px-2 py-1 text-[var(--cream-dim)]',
+                  difficulty === tier ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
+                ]}
+                aria-pressed={difficulty === tier}
+                onclick={() => setDifficulty(tier as DifficultyTier)}
+              >
+                {difficultyLabels[tier as DifficultyTier]}
+              </button>
+            {/each}
+          </div>
+
+          <div class="font-utility flex border border-[var(--charcoal-line)] text-[10px] tracking-[0.08em] uppercase">
+            <button
+              type="button"
+              class={[
+                'flex-1 px-2.5 py-1 text-[var(--cream-dim)]',
+                livesMode === 'saor' ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
+              ]}
+              aria-pressed={livesMode === 'saor'}
+              onclick={() => setLivesMode('saor')}
+            >
+              Saor
+            </button>
+            <button
+              type="button"
+              class={[
+                'flex-1 px-2.5 py-1 text-[var(--cream-dim)]',
+                livesMode === 'teoranta' ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
+              ]}
+              aria-pressed={livesMode === 'teoranta'}
+              onclick={() => setLivesMode('teoranta')}
+            >
+              Teoranta
+            </button>
+          </div>
+        </div>
+
+        <div class="font-utility mb-4 flex items-center justify-between text-[10px] tracking-[0.08em] text-[var(--cream-faint)] uppercase lg:border-y lg:border-[var(--charcoal-line)] lg:py-3">
+          <p>Nodanna {remainingHints}/{hintAllowance}</p>
+          {#if livesMode === 'teoranta'}
+            <p>Saolta {livesLeft}/{lifeCount}</p>
+          {:else}
+            <p>Saor</p>
+          {/if}
+        </div>
+
+        <CipherKeyboard
+          {mode}
+          {solvedLetters}
+          disabled={locked || selectedNumber === null}
+          onpress={guessLetter}
+        />
+
+        <div class="mt-4 flex gap-2 lg:mt-6">
           <button
             type="button"
-            class={[
-              'px-2 py-1 text-[var(--cream-dim)]',
-              difficulty === tier ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
-            ]}
-            aria-pressed={difficulty === tier}
-            onclick={() => setDifficulty(tier as DifficultyTier)}
+            class="font-utility flex-1 border border-[var(--charcoal-line)] px-3 py-2 text-[10.5px] tracking-[0.06em] text-[var(--cream-dim)] uppercase disabled:opacity-35"
+            disabled={locked || remainingHints <= 0}
+            onclick={useHint}
           >
-            {difficultyLabels[tier as DifficultyTier]}
+            Nod
           </button>
-        {/each}
-      </div>
-
-      <div class="font-utility flex border border-[var(--charcoal-line)] text-[10px] tracking-[0.08em] uppercase">
-        <button
-          type="button"
-          class={[
-            'px-2.5 py-1 text-[var(--cream-dim)]',
-            livesMode === 'saor' ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
-          ]}
-          aria-pressed={livesMode === 'saor'}
-          onclick={() => setLivesMode('saor')}
-        >
-          Saor
-        </button>
-        <button
-          type="button"
-          class={[
-            'px-2.5 py-1 text-[var(--cream-dim)]',
-            livesMode === 'teoranta' ? 'bg-[var(--vermilion-dim)] text-[var(--cream)]' : ''
-          ]}
-          aria-pressed={livesMode === 'teoranta'}
-          onclick={() => setLivesMode('teoranta')}
-        >
-          Teoranta
-        </button>
-      </div>
-    </div>
-
-    <div class="font-utility mb-4 flex items-center justify-between text-[10px] tracking-[0.08em] text-[var(--cream-faint)] uppercase">
-      <p>Nodanna {remainingHints}/{hintAllowance}</p>
-      {#if livesMode === 'teoranta'}
-        <p>Saolta {livesLeft}/{lifeCount}</p>
-      {:else}
-        <p>Saor</p>
-      {/if}
-    </div>
-
-    <h1 id="puzzle-title" class="font-display mb-5 text-center text-2xl font-normal tracking-wide text-[var(--cream)]">Fuascail an Seanfhocal</h1>
-
-    <CipherText
-      text={phrase}
-      letterToNumber={puzzle.letterToNumber}
-      numberToLetter={puzzle.numberToLetter}
-      {guesses}
-      {solvedNumbers}
-      bind:selectedNumber
-      disabled={locked}
-    />
-
-    <CipherKeyboard
-      {mode}
-      {solvedLetters}
-      disabled={locked || selectedNumber === null}
-      onpress={guessLetter}
-    />
-
-    <div class="mt-4 border-y border-[var(--charcoal-line)] px-2 py-3">
-      {#if resultKind === null}
-        <p class="font-utility text-center text-xs text-[var(--cream-dim)]" aria-live="polite">{status}</p>
-      {:else}
-        <div
-          class="text-center"
-          role="dialog"
-          aria-modal="false"
-          aria-labelledby="reveal-title"
-          aria-describedby="reveal-answer reveal-note"
-        >
-          <p id="reveal-title" class="font-utility mb-3 text-[10px] tracking-[0.14em] text-[var(--vermilion-bright)] uppercase">
-            {resultEyebrow}
-          </p>
-          <p id="reveal-answer" class="font-display mb-4 text-2xl leading-snug text-[var(--cream)]">{phrase}</p>
-
-          <p id="reveal-note" class="border-t border-[var(--charcoal-line)] pt-4 text-left text-sm leading-6 text-[var(--cream-dim)]">
-            {selectedContent.provenance_note}
-          </p>
+          <button
+            type="button"
+            class="font-utility flex-1 border border-[var(--charcoal-line)] px-3 py-2 text-[10.5px] tracking-[0.06em] text-[var(--cream-dim)] uppercase"
+            onclick={() => resetProgress(getLifeCount(difficulty))}
+          >
+            Athshocraigh
+          </button>
         </div>
-      {/if}
+
+        <div class="font-utility mt-3 flex items-center gap-2 border-t border-[var(--charcoal-line)] pt-3 text-[10px] tracking-[0.05em] text-[var(--cream-faint)] uppercase">
+          {#if $purchaseState.removeAds}
+            <p class="flex-1 text-center text-[var(--cream-dim)]">Fógraí bainte</p>
+          {:else}
+            <button
+              type="button"
+              class="flex-1 border border-[var(--charcoal-line)] px-2 py-2 text-[var(--cream-dim)] uppercase disabled:opacity-35"
+              disabled={$purchaseState.busy || $purchaseState.available === 'unavailable'}
+              onclick={purchaseRemoveAds}
+            >
+              Bain fógraí{#if $purchaseState.price !== null} · {$purchaseState.price}{/if}
+            </button>
+            <button
+              type="button"
+              class="border border-[var(--charcoal-line)] px-2 py-2 text-[var(--cream-dim)] uppercase disabled:opacity-35"
+              disabled={$purchaseState.busy || $purchaseState.available === 'unavailable'}
+              onclick={restorePurchases}
+            >
+              Athchóirigh
+            </button>
+          {/if}
+        </div>
+
+        {#if $purchaseState.message !== null && !$purchaseState.removeAds}
+          <p class="font-utility mt-2 text-center text-[10px] text-[var(--cream-faint)]">{$purchaseState.message}</p>
+        {/if}
+
+        <p class="font-utility mt-3 text-center text-[10px] text-[var(--cream-faint)]">gach uimhir = an litir chéanna, i gcónaí</p>
+      </aside>
     </div>
-
-    <div class="mt-3 flex gap-2">
-      <button
-        type="button"
-        class="font-utility flex-1 border border-[var(--charcoal-line)] px-3 py-2 text-[10.5px] tracking-[0.06em] text-[var(--cream-dim)] uppercase disabled:opacity-35"
-        disabled={locked || remainingHints <= 0}
-        onclick={useHint}
-      >
-        Nod
-      </button>
-      <button
-        type="button"
-        class="font-utility flex-1 border border-[var(--charcoal-line)] px-3 py-2 text-[10.5px] tracking-[0.06em] text-[var(--cream-dim)] uppercase"
-        onclick={() => resetProgress(getLifeCount(difficulty))}
-      >
-        Athshocraigh
-      </button>
-    </div>
-
-    <div class="font-utility mt-3 flex items-center gap-2 border-t border-[var(--charcoal-line)] pt-3 text-[10px] tracking-[0.05em] text-[var(--cream-faint)] uppercase">
-      {#if $purchaseState.removeAds}
-        <p class="flex-1 text-center text-[var(--cream-dim)]">Fógraí bainte</p>
-      {:else}
-        <button
-          type="button"
-          class="flex-1 border border-[var(--charcoal-line)] px-2 py-2 text-[var(--cream-dim)] uppercase disabled:opacity-35"
-          disabled={$purchaseState.busy || $purchaseState.available === 'unavailable'}
-          onclick={purchaseRemoveAds}
-        >
-          Bain fógraí{#if $purchaseState.price !== null} · {$purchaseState.price}{/if}
-        </button>
-        <button
-          type="button"
-          class="border border-[var(--charcoal-line)] px-2 py-2 text-[var(--cream-dim)] uppercase disabled:opacity-35"
-          disabled={$purchaseState.busy || $purchaseState.available === 'unavailable'}
-          onclick={restorePurchases}
-        >
-          Athchóirigh
-        </button>
-      {/if}
-    </div>
-
-    {#if $purchaseState.message !== null && !$purchaseState.removeAds}
-      <p class="font-utility mt-2 text-center text-[10px] text-[var(--cream-faint)]">{$purchaseState.message}</p>
-    {/if}
-
-    <p class="font-utility mt-3 text-center text-[10px] text-[var(--cream-faint)]">gach uimhir = an litir chéanna, i gcónaí</p>
   </section>
 </main>
