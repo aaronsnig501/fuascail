@@ -28,7 +28,7 @@
 
       <a
         class="border border-[var(--charcoal-line)] px-4 py-3 text-center text-[var(--cream-dim)]"
-        href="/how-to"
+        href="/play?how-to=1"
       >
         Conas a Imirt
       </a>
