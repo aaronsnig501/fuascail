@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Fuascail</string>
+    <string name="title_activity_main">Fuascail</string>
+    <string name="package_name">com.cluichi.fuascail</string>
+    <string name="custom_url_scheme">com.cluichi.fuascail</string>
+</resources>
