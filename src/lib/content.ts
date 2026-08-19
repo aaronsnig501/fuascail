@@ -55,7 +55,23 @@ export type ServedContentRecord = {
   servedOn: string;
 };
 
+export type PuzzleCategory = {
+  slug: string;
+  category: string;
+  label: string;
+  description: string;
+  count: number;
+  difficultyTiers: DifficultyTier[];
+};
+
 export const RECENT_CONTENT_WINDOW_DAYS = 60;
+
+const CATEGORY_PRESENTATION: Record<string, Pick<PuzzleCategory, 'label' | 'description'>> = {
+  seanfhocal: {
+    label: 'Seanfhocail',
+    description: 'Nathanna gearra traidisiúnta le leideanna faoin saol, faoin bpobal, agus faoin obair.'
+  }
+};
 
 export const PUZZLE_CONTENT_JSON_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -295,6 +311,72 @@ export function getDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function getPuzzleCategories(bank: readonly PuzzleContent[]): PuzzleCategory[] {
+  const groupedItems = new Map<string, PuzzleContent[]>();
+
+  for (const item of bank) {
+    if (!validatePuzzleContent(item)) {
+      continue;
+    }
+
+    groupedItems.set(item.category, [...(groupedItems.get(item.category) ?? []), item]);
+  }
+
+  return [...groupedItems.entries()]
+    .map(([category, items]) => {
+      const presentation = CATEGORY_PRESENTATION[category] ?? {
+        label: titleCaseCategory(category),
+        description: 'Bailiúchán puzal ón gcatagóir seo.'
+      };
+
+      return {
+        slug: getCategorySlug(category),
+        category,
+        label: presentation.label,
+        description: presentation.description,
+        count: items.length,
+        difficultyTiers: getOrderedDifficultyTiers(items)
+      };
+    })
+    .sort((first, second) => first.label.localeCompare(second.label, 'ga-IE'));
+}
+
+export function getCategorySlug(category: string): string {
+  return category
+    .trim()
+    .toLocaleLowerCase('en')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function getContentByCategory(
+  bank: readonly PuzzleContent[],
+  categorySlug: string
+): PuzzleContent[] {
+  return bank.filter((item) => getCategorySlug(item.category) === categorySlug);
+}
+
+export function selectContentForCategory(
+  bank: readonly PuzzleContent[],
+  categorySlug: string,
+  seedKey: string
+): PuzzleContent {
+  const categoryItems = getContentByCategory(bank, categorySlug);
+
+  if (categoryItems.length === 0) {
+    throw new Error(`Cannot select content for unknown category "${categorySlug}".`);
+  }
+
+  const index = hashString(`${categorySlug}:${seedKey}`) % categoryItems.length;
+  const selectedItem = categoryItems[index];
+
+  if (selectedItem === undefined) {
+    throw new Error('Unable to select category content.');
+  }
+
+  return selectedItem;
+}
+
 export function selectContentForDate(
   bank: readonly PuzzleContent[],
   dateKey: string,
@@ -354,13 +436,32 @@ export function pruneServedRecords(
 }
 
 function hashDateKey(dateKey: string): number {
+  return hashString(dateKey);
+}
+
+function hashString(value: string): number {
   let hash = 0;
 
-  for (const character of dateKey) {
+  for (const character of value) {
     hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
   }
 
   return hash;
+}
+
+function titleCaseCategory(category: string): string {
+  return category
+    .split(/[-_\s]+/)
+    .filter((part) => part.length > 0)
+    .map((part) => part[0]?.toLocaleUpperCase('ga-IE') + part.slice(1))
+    .join(' ');
+}
+
+function getOrderedDifficultyTiers(items: readonly PuzzleContent[]): DifficultyTier[] {
+  const order: DifficultyTier[] = ['easy', 'medium', 'hard', 'expert'];
+  const tiers = new Set(items.map((item) => item.difficulty_tier));
+
+  return order.filter((tier) => tiers.has(tier));
 }
 
 function getDateKeyDistance(fromDateKey: string, toDateKey: string): number {
