@@ -3,6 +3,7 @@
   import { initializeAds, recordPuzzleCompletedAndMaybeShowInterstitial } from '$lib/ads';
   import CipherKeyboard from '$lib/CipherKeyboard.svelte';
   import CipherText from '$lib/CipherText.svelte';
+  import HowToDialog from '$lib/HowToDialog.svelte';
   import {
     initializePurchases,
     purchaseRemoveAds,
@@ -51,6 +52,7 @@
   let livesLeft = $state(getLifeCount('medium'));
   let status = $state('roghnaigh cill chun tosú');
   let puzzleAttempt = $state(0);
+  let showHowTo = $state(false);
   let lastAdCompletionKey: string | null = null;
 
   let phrase = $derived(mode === 'trad' ? selectedContent.text_trad : selectedContent.text_digraf);
@@ -82,6 +84,7 @@
     });
 
     window.addEventListener('keydown', handlePhysicalKeyboardGuess);
+    showHowTo = new URLSearchParams(window.location.search).get('how-to') === '1';
 
     const servedRecords = loadServedContentRecords();
     selectedContent = selectContentForDate(CONTENT_BANK, todayKey, servedRecords);
@@ -175,7 +178,23 @@
       : `triailte cheana: ${selectedNumber} ≠ ${evaluation.letter}`;
   }
 
+  function openHowTo(): void {
+    showHowTo = true;
+  }
+
+  function closeHowTo(): void {
+    showHowTo = false;
+
+    if (new URLSearchParams(window.location.search).has('how-to')) {
+      history.replaceState(history.state, '', window.location.pathname);
+    }
+  }
+
   function handlePhysicalKeyboardGuess(event: KeyboardEvent): void {
+    if (showHowTo) {
+      return;
+    }
+
     if (event.altKey || event.ctrlKey || event.metaKey || event.key.length !== 1) {
       return;
     }
@@ -282,7 +301,16 @@
     <p id="cipher-instructions" class="sr-only">
       Roghnaigh cill uimhrithe sa téacs rúin, ansin roghnaigh litir ón méarchlár ar an scáileán nó brúigh litir ar an méarchlár fisiciúil.
     </p>
-    <a class="font-display mb-5 inline-block text-2xl text-[var(--cream)] lg:mb-7 lg:text-3xl" href="/" aria-label="Fuascail, téigh go dtí an baile">Fuascail</a>
+    <div class="mb-5 flex items-center justify-between gap-4 lg:mb-7">
+      <a class="font-display inline-block text-2xl text-[var(--cream)] lg:text-3xl" href="/" aria-label="Fuascail, téigh go dtí an baile">Fuascail</a>
+      <button
+        type="button"
+        class="font-utility text-[10px] tracking-[0.08em] text-[var(--cream-dim)] uppercase"
+        onclick={openHowTo}
+      >
+        Conas a imirt
+      </button>
+    </div>
 
     <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
       <div>
@@ -463,4 +491,8 @@
       </aside>
     </div>
   </section>
+
+  {#if showHowTo}
+    <HowToDialog onclose={closeHowTo} />
+  {/if}
 </main>
