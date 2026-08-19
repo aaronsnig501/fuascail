@@ -377,6 +377,29 @@ export function selectContentForCategory(
   return selectedItem;
 }
 
+export function selectNextContent(
+  bank: readonly PuzzleContent[],
+  currentItemId: string,
+  categorySlug: string | null = null
+): PuzzleContent {
+  const selectionPool =
+    categorySlug === null ? [...bank] : getContentByCategory(bank, categorySlug);
+
+  if (selectionPool.length === 0) {
+    throw new Error('Cannot select next content from an empty bank.');
+  }
+
+  const currentIndex = selectionPool.findIndex((item) => item.id === currentItemId);
+  const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % selectionPool.length;
+  const selectedItem = selectionPool[nextIndex];
+
+  if (selectedItem === undefined) {
+    throw new Error('Unable to select next content.');
+  }
+
+  return selectedItem;
+}
+
 export function selectContentForDate(
   bank: readonly PuzzleContent[],
   dateKey: string,

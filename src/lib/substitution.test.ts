@@ -13,6 +13,7 @@ import {
   recordServedContent,
   selectContentForCategory,
   selectContentForDate,
+  selectNextContent,
   validatePuzzleContent,
   type PuzzleContent
 } from './content';
@@ -247,6 +248,29 @@ describe('content selection', () => {
     expect(() => selectContentForCategory(bank, 'missing', '2026-08-02')).toThrow(
       'Cannot select content for unknown category "missing".'
     );
+  });
+
+  it('selects the next content item without mutating served daily records', () => {
+    expect(selectNextContent(bank, 'a').id).toBe('b');
+    expect(selectNextContent(bank, 'c').id).toBe('a');
+    expect(selectNextContent(bank, 'missing').id).toBe('a');
+  });
+
+  it('selects the next content item inside a category when supplied', () => {
+    const firstFixture = bank[0];
+
+    if (firstFixture === undefined) {
+      throw new Error('Missing content fixture.');
+    }
+
+    const mixedBank: readonly PuzzleContent[] = [
+      ...bank,
+      { ...firstFixture, id: 'other', category: 'other-category', text_digraf: 'Other' }
+    ];
+
+    expect(selectNextContent(mixedBank, 'b', 'test').id).toBe('c');
+    expect(selectNextContent(mixedBank, 'c', 'test').id).toBe('a');
+    expect(selectNextContent(mixedBank, 'other', 'other-category').id).toBe('other');
   });
 
   it('requires a source and rights reference', () => {

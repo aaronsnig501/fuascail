@@ -18,6 +18,7 @@
     recordServedContent,
     selectContentForCategory,
     selectContentForDate,
+    selectNextContent,
     type PuzzleContent,
     type ServedContentRecord
   } from '$lib/content';
@@ -194,6 +195,13 @@
 
     puzzleSeed += 1;
     resetProgress(getLifeCount(selectedContent.difficulty_tier));
+  }
+
+  function startNextPuzzle(): void {
+    selectedContent = selectNextContent(CONTENT_BANK, selectedContent.id, selectedCategorySlug);
+    playView = 'puzzle';
+    puzzleSeed += 1;
+    resetProgress(getLifeCount(difficulty));
   }
 
   function showCategoryList(pushHistory = true): void {
@@ -495,16 +503,23 @@
                 <button
                   type="button"
                   class="flex-1 border border-[var(--vermilion-dim)] bg-[var(--vermilion-dim)] px-3 py-2 text-[var(--cream)]"
-                  onclick={() => showCategoryList()}
+                  onclick={startNextPuzzle}
                 >
-                  Fill ar Chatagóirí
+                  Puzal Eile
                 </button>
                 <button
                   type="button"
                   class="flex-1 border border-[var(--charcoal-line)] px-3 py-2 text-[var(--cream-dim)]"
-                  onclick={() => selectedCategorySlug === null ? startDailyPuzzle() : startCategoryPuzzle(selectedCategorySlug)}
+                  onclick={() => resetProgress(getLifeCount(difficulty))}
                 >
-                  Puzal Eile
+                  Athimirt
+                </button>
+                <button
+                  type="button"
+                  class="flex-1 border border-[var(--charcoal-line)] px-3 py-2 text-[var(--cream-dim)]"
+                  onclick={() => showCategoryList()}
+                >
+                  Catagóirí
                 </button>
               </div>
             </div>
