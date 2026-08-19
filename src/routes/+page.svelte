@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { initializeAds, recordPuzzleCompletedAndMaybeShowInterstitial } from '$lib/ads';
   import CipherKeyboard from '$lib/CipherKeyboard.svelte';
   import CipherText from '$lib/CipherText.svelte';
   import {
@@ -40,6 +41,8 @@
   let hintsUsed = $state(0);
   let livesLeft = $state(getLifeCount('medium'));
   let status = $state('roghnaigh cill chun tosú');
+  let puzzleAttempt = $state(0);
+  let lastAdCompletionKey: string | null = null;
 
   let phrase = $derived(mode === 'trad' ? selectedContent.text_trad : selectedContent.text_digraf);
   let puzzle = $derived(
@@ -65,6 +68,8 @@
   let resultEyebrow = $derived(resultKind === 'solved' ? 'Réitithe' : 'Seo é');
 
   onMount(() => {
+    void initializeAds();
+
     const servedRecords = loadServedContentRecords();
     selectedContent = selectContentForDate(CONTENT_BANK, todayKey, servedRecords);
     difficulty = selectedContent.difficulty_tier;
@@ -77,6 +82,17 @@
       )
     );
     resetProgress(getLifeCount(selectedContent.difficulty_tier));
+  });
+
+  $effect(() => {
+    const completionKey = resultKind === null ? null : `${puzzleSeed}:${puzzleAttempt}:${resultKind}`;
+
+    if (completionKey === null || completionKey === lastAdCompletionKey) {
+      return;
+    }
+
+    lastAdCompletionKey = completionKey;
+    void recordPuzzleCompletedAndMaybeShowInterstitial();
   });
 
   function setMode(nextMode: OrthographyMode): void {
@@ -105,6 +121,7 @@
     wrongGuessesByNumber = {};
     hintsUsed = 0;
     livesLeft = nextLivesLeft;
+    puzzleAttempt += 1;
     status = 'roghnaigh cill chun tosú';
   }
 
