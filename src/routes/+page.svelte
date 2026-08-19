@@ -18,13 +18,12 @@
         Tosaigh an Puzal Laethúil
       </a>
 
-      <button
-        type="button"
-        class="border border-[var(--charcoal-line)] px-4 py-3 text-[var(--cream-faint)] uppercase opacity-55"
-        disabled
+      <a
+        class="border border-[var(--charcoal-line)] px-4 py-3 text-center text-[var(--cream-dim)]"
+        href="/play?view=categories"
       >
         Catagóirí
-      </button>
+      </a>
 
       <a
         class="border border-[var(--charcoal-line)] px-4 py-3 text-center text-[var(--cream-dim)]"

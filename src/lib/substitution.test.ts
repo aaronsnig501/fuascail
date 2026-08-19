@@ -4,11 +4,14 @@ import {
   PUZZLE_CONTENT_JSON_SCHEMA,
   CONTENT_BANK_TARGET_SIZE,
   getContentBankReadiness,
+  getContentByCategory,
   getDateKey,
+  getPuzzleCategories,
   getProductionReadyContentBank,
   isPublicDomainByAuthorDeathYear,
   pruneServedRecords,
   recordServedContent,
+  selectContentForCategory,
   selectContentForDate,
   validatePuzzleContent,
   type PuzzleContent
@@ -223,6 +226,27 @@ describe('content selection', () => {
 
   it('validates every bank item against the puzzle schema', () => {
     expect(CONTENT_BANK.every(validatePuzzleContent)).toBe(true);
+  });
+
+  it('groups puzzle content into browsable categories', () => {
+    expect(getPuzzleCategories(bank)).toEqual([
+      {
+        slug: 'test',
+        category: 'test',
+        label: 'Test',
+        description: 'Bailiúchán puzal ón gcatagóir seo.',
+        count: 3,
+        difficultyTiers: ['easy', 'medium', 'hard']
+      }
+    ]);
+  });
+
+  it('filters and selects content by category slug', () => {
+    expect(getContentByCategory(bank, 'test')).toEqual([...bank]);
+    expect(selectContentForCategory(bank, 'test', '2026-08-02').category).toBe('test');
+    expect(() => selectContentForCategory(bank, 'missing', '2026-08-02')).toThrow(
+      'Cannot select content for unknown category "missing".'
+    );
   });
 
   it('requires a source and rights reference', () => {

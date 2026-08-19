@@ -14,7 +14,9 @@
     CONTENT_BANK,
     RECENT_CONTENT_WINDOW_DAYS,
     getDateKey,
+    getPuzzleCategories,
     recordServedContent,
+    selectContentForCategory,
     selectContentForDate,
     type PuzzleContent,
     type ServedContentRecord
@@ -39,12 +41,15 @@
     expert: 'Saineolaí'
   };
   const baseKeyboardLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const puzzleCategories = getPuzzleCategories(CONTENT_BANK);
 
+  let playView = $state<'puzzle' | 'categories'>('puzzle');
   let mode = $state<OrthographyMode>('digraf');
   let difficulty = $state<DifficultyTier>('medium');
   let livesMode = $state<LivesMode>('teoranta');
   let puzzleSeed = $state(1);
   let selectedContent: PuzzleContent = $state(selectContentForDate(CONTENT_BANK, todayKey));
+  let selectedCategorySlug: string | null = $state(null);
   let selectedNumber: number | null = $state(null);
   let guesses: Record<number, string> = $state({});
   let wrongGuessesByNumber: WrongGuessesByNumber = $state({});
@@ -77,6 +82,10 @@
   let resultKind = $derived(complete ? 'solved' : livesMode === 'teoranta' && livesLeft <= 0 ? 'shown' : null);
   let locked = $derived(resultKind !== null);
   let resultEyebrow = $derived(resultKind === 'solved' ? 'Réitithe' : 'Seo é');
+  let selectedCategory = $derived(
+    puzzleCategories.find((category) => category.slug === selectedCategorySlug)
+  );
+  let puzzleContextLabel = $derived(selectedCategory?.label ?? 'Puzal Laethúil');
 
   onMount(() => {
     void initializePurchases().finally(() => {
@@ -84,23 +93,12 @@
     });
 
     window.addEventListener('keydown', handlePhysicalKeyboardGuess);
-    showHowTo = new URLSearchParams(window.location.search).get('how-to') === '1';
-
-    const servedRecords = loadServedContentRecords();
-    selectedContent = selectContentForDate(CONTENT_BANK, todayKey, servedRecords);
-    difficulty = selectedContent.difficulty_tier;
-    saveServedContentRecords(
-      recordServedContent(
-        servedRecords,
-        selectedContent.id,
-        todayKey,
-        RECENT_CONTENT_WINDOW_DAYS
-      )
-    );
-    resetProgress(getLifeCount(selectedContent.difficulty_tier));
+    window.addEventListener('popstate', applyLocationState);
+    applyLocationState();
 
     return () => {
       window.removeEventListener('keydown', handlePhysicalKeyboardGuess);
+      window.removeEventListener('popstate', applyLocationState);
     };
   });
 
@@ -133,6 +131,78 @@
   function setLivesMode(nextLivesMode: LivesMode): void {
     livesMode = nextLivesMode;
     resetProgress(getLifeCount(difficulty));
+  }
+
+  function applyLocationState(): void {
+    const params = new URLSearchParams(window.location.search);
+    showHowTo = params.get('how-to') === '1';
+
+    if (params.get('view') === 'categories') {
+      playView = 'categories';
+      selectedNumber = null;
+      return;
+    }
+
+    const categorySlug = params.get('category');
+
+    if (categorySlug !== null) {
+      if (puzzleCategories.some((category) => category.slug === categorySlug)) {
+        startCategoryPuzzle(categorySlug, false);
+      } else {
+        showCategoryList(false);
+      }
+
+      return;
+    }
+
+    startDailyPuzzle(false);
+  }
+
+  function startDailyPuzzle(pushHistory = true): void {
+    const servedRecords = loadServedContentRecords();
+
+    selectedCategorySlug = null;
+    selectedContent = selectContentForDate(CONTENT_BANK, todayKey, servedRecords);
+    difficulty = selectedContent.difficulty_tier;
+    playView = 'puzzle';
+    saveServedContentRecords(
+      recordServedContent(
+        servedRecords,
+        selectedContent.id,
+        todayKey,
+        RECENT_CONTENT_WINDOW_DAYS
+      )
+    );
+
+    if (pushHistory) {
+      history.pushState(history.state, '', '/play');
+    }
+
+    puzzleSeed += 1;
+    resetProgress(getLifeCount(selectedContent.difficulty_tier));
+  }
+
+  function startCategoryPuzzle(categorySlug: string, pushHistory = true): void {
+    selectedContent = selectContentForCategory(CONTENT_BANK, categorySlug, todayKey);
+    selectedCategorySlug = categorySlug;
+    difficulty = selectedContent.difficulty_tier;
+    playView = 'puzzle';
+
+    if (pushHistory) {
+      history.pushState(history.state, '', `/play?category=${encodeURIComponent(categorySlug)}`);
+    }
+
+    puzzleSeed += 1;
+    resetProgress(getLifeCount(selectedContent.difficulty_tier));
+  }
+
+  function showCategoryList(pushHistory = true): void {
+    playView = 'categories';
+    selectedNumber = null;
+
+    if (pushHistory) {
+      history.pushState(history.state, '', '/play?view=categories');
+    }
   }
 
   function resetProgress(nextLivesLeft: number): void {
@@ -303,20 +373,64 @@
     </p>
     <div class="mb-5 flex items-center justify-between gap-4 lg:mb-7">
       <a class="font-display inline-block text-2xl text-[var(--cream)] lg:text-3xl" href="/" aria-label="Fuascail, téigh go dtí an baile">Fuascail</a>
-      <button
-        type="button"
-        class="font-utility text-[10px] tracking-[0.08em] text-[var(--cream-dim)] uppercase"
-        onclick={openHowTo}
-      >
-        Conas a imirt
-      </button>
+      <div class="font-utility flex items-center gap-3 text-[10px] tracking-[0.08em] uppercase">
+        <button
+          type="button"
+          class="text-[var(--cream-dim)]"
+          onclick={() => showCategoryList()}
+        >
+          Catagóirí
+        </button>
+        <button
+          type="button"
+          class="text-[var(--cream-dim)]"
+          onclick={openHowTo}
+        >
+          Conas a imirt
+        </button>
+      </div>
     </div>
 
+    {#if playView === 'categories'}
+      <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="font-utility mb-3 text-[11px] tracking-[0.14em] text-[var(--cream-dim)] uppercase">Roghnaigh grúpa</p>
+          <h1 id="puzzle-title" class="font-display text-center text-3xl font-normal tracking-wide text-[var(--cream)] lg:text-left lg:text-5xl">
+            Catagóirí
+          </h1>
+        </div>
+
+        <button
+          type="button"
+          class="font-utility border border-[var(--vermilion-dim)] bg-[var(--vermilion-dim)] px-4 py-2 text-[10.5px] tracking-[0.06em] text-[var(--cream)] uppercase"
+          onclick={() => startDailyPuzzle()}
+        >
+          Puzal Laethúil
+        </button>
+      </div>
+
+      <div class="grid gap-3 lg:grid-cols-2">
+        {#each puzzleCategories as category}
+          <button
+            type="button"
+            class="border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] p-4 text-left transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]"
+            onclick={() => startCategoryPuzzle(category.slug)}
+          >
+            <span class="font-display mb-2 block text-2xl text-[var(--cream)]">{category.label}</span>
+            <span class="mb-4 block text-sm leading-6 text-[var(--cream-dim)]">{category.description}</span>
+            <span class="font-utility flex flex-wrap gap-2 text-[10px] tracking-[0.08em] text-[var(--cream-faint)] uppercase">
+              <span>{category.count} puzal</span>
+              <span>{category.difficultyTiers.map((tier) => difficultyLabels[tier]).join(' · ')}</span>
+            </span>
+          </button>
+        {/each}
+      </div>
+    {:else}
     <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <p class="font-utility mb-3 text-[11px] tracking-[0.14em] text-[var(--cream-dim)] uppercase">Inniu · Seanfhocal</p>
+        <p class="font-utility mb-3 text-[11px] tracking-[0.14em] text-[var(--cream-dim)] uppercase">Inniu · {puzzleContextLabel}</p>
         <h1 id="puzzle-title" class="font-display text-center text-2xl font-normal tracking-wide text-[var(--cream)] lg:text-left lg:text-4xl">
-          Fuascail an Seanfhocal
+          Fuascail {selectedCategory === undefined ? 'an Puzal' : selectedCategory.label}
         </h1>
       </div>
 
@@ -377,6 +491,22 @@
               <p id="reveal-note" class="border-t border-[var(--charcoal-line)] pt-4 text-left text-sm leading-6 text-[var(--cream-dim)] lg:text-base lg:leading-7">
                 {selectedContent.provenance_note}
               </p>
+              <div class="font-utility mt-4 flex flex-col gap-2 text-[10.5px] tracking-[0.06em] uppercase sm:flex-row">
+                <button
+                  type="button"
+                  class="flex-1 border border-[var(--vermilion-dim)] bg-[var(--vermilion-dim)] px-3 py-2 text-[var(--cream)]"
+                  onclick={() => showCategoryList()}
+                >
+                  Fill ar Chatagóirí
+                </button>
+                <button
+                  type="button"
+                  class="flex-1 border border-[var(--charcoal-line)] px-3 py-2 text-[var(--cream-dim)]"
+                  onclick={() => selectedCategorySlug === null ? startDailyPuzzle() : startCategoryPuzzle(selectedCategorySlug)}
+                >
+                  Puzal Eile
+                </button>
+              </div>
             </div>
           {/if}
         </div>
@@ -490,6 +620,7 @@
         <p class="font-utility mt-3 text-center text-[10px] text-[var(--cream-faint)]">gach uimhir = an litir chéanna, i gcónaí</p>
       </aside>
     </div>
+    {/if}
   </section>
 
   {#if showHowTo}
