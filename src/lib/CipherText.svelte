@@ -52,7 +52,7 @@
 </script>
 
 <div
-  class="flex min-h-36 flex-wrap content-start justify-center gap-y-1 px-1.5 py-2"
+  class="cipher-text flex min-h-36 flex-wrap content-start justify-center gap-y-1 px-1.5 py-2"
   role="group"
   aria-label="Téacs rúin"
   aria-describedby="cipher-instructions"
@@ -65,7 +65,7 @@
           <button
             type="button"
             class={[
-              'mr-0.5 flex w-6 flex-col items-center select-none disabled:cursor-default',
+              'cipher-cell mr-0.5 flex w-6 flex-col items-center select-none disabled:cursor-default',
               selectedNumber === cell.number ? 'text-[var(--cream)]' : 'text-[var(--cream)]',
               solved ? 'text-[var(--vermilion-bright)]' : '',
               disabled ? 'cursor-default' : 'cursor-pointer'
@@ -77,17 +77,17 @@
           >
             <span
               class={[
-                'font-utility flex h-6 w-full items-center justify-center border-b-2 text-lg font-semibold leading-none',
+                'cipher-letter font-utility flex h-6 w-full items-center justify-center border-b-2 text-lg font-semibold leading-none',
                 selectedNumber === cell.number ? 'border-[var(--vermilion-bright)]' : 'border-[var(--charcoal-line)]',
                 solved ? 'border-[var(--vermilion-dim)] text-[var(--vermilion-bright)]' : ''
               ]}
             >
               {solved ? numberToLetter[cell.number] ?? cell.letter : guesses[cell.number] ?? ''}
             </span>
-            <span class="font-utility mt-0.5 text-[9px] leading-none text-[var(--cream-faint)]">{cell.number}</span>
+            <span class="cipher-number font-utility mt-0.5 text-[9px] leading-none text-[var(--cream-faint)]">{cell.number}</span>
           </button>
         {:else}
-          <span class="font-utility mr-1 self-end pb-1.5 text-lg text-[var(--cream-dim)]">{cell.value}</span>
+          <span class="cipher-punctuation font-utility mr-1 self-end pb-1.5 text-lg text-[var(--cream-dim)]">{cell.value}</span>
         {/if}
       {/each}
     </div>

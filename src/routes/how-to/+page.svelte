@@ -2,9 +2,9 @@
   <title>Conas a Imirt · Fuascail</title>
 </svelte:head>
 
-<main class="app-shell flex items-center justify-center bg-[radial-gradient(ellipse_at_top,#241f19_0%,var(--charcoal-deep)_62%)] text-[var(--cream)]">
-  <article class="puzzle-card w-full max-w-[560px] border border-[var(--charcoal-line)] bg-[var(--charcoal-surface)] px-5 py-6 shadow-2xl [border-top:3px_solid_var(--vermilion)]" aria-labelledby="how-to-title">
-    <a class="font-utility mb-5 inline-block text-[10px] tracking-[0.08em] text-[var(--cream-dim)] uppercase" href="/">Baile</a>
+<main class="app-shell flex items-center justify-center bg-[var(--charcoal-deep)] text-[var(--cream)]">
+  <article class="app-surface puzzle-card w-full max-w-[560px] border border-[var(--charcoal-line)] bg-[var(--charcoal-surface)] px-5 py-6 shadow-2xl [border-top:3px_solid_var(--vermilion)]" aria-labelledby="how-to-title">
+    <a class="font-display mb-8 inline-block text-2xl text-[var(--cream)] lg:text-3xl" href="/" aria-label="Fuascail, téigh go dtí an baile">Fuascail</a>
 
     <h1 id="how-to-title" class="font-display mb-5 text-center text-3xl font-normal text-[var(--cream)]">Conas a Imirt</h1>
 
