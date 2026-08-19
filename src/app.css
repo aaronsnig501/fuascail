@@ -22,14 +22,26 @@
   box-sizing: border-box;
 }
 
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--charcoal-deep);
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  background: var(--charcoal-deep);
+  -webkit-text-size-adjust: 100%;
 }
 
 button {
   font: inherit;
+  touch-action: manipulation;
 }
 
 .font-display {
@@ -38,4 +50,25 @@ button {
 
 .font-utility {
   font-family: 'IBM Plex Mono', monospace;
+}
+
+.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-block-start: max(1.75rem, env(safe-area-inset-top));
+  padding-block-end: max(1.75rem, env(safe-area-inset-bottom));
+  padding-inline-start: max(0.75rem, env(safe-area-inset-left));
+  padding-inline-end: max(0.75rem, env(safe-area-inset-right));
+}
+
+.puzzle-card {
+  max-height: calc(
+    100vh - max(1.75rem, env(safe-area-inset-top)) - max(1.75rem, env(safe-area-inset-bottom))
+  );
+  max-height: calc(
+    100dvh - max(1.75rem, env(safe-area-inset-top)) - max(1.75rem, env(safe-area-inset-bottom))
+  );
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
