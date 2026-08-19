@@ -26,3 +26,23 @@ aws cloudfront create-invalidation \
   --distribution-id "$(tofu -chdir=infra output -raw cloudfront_distribution_id)" \
   --paths '/*'
 ```
+
+## GitHub Actions deployment
+
+Merges to `main` are built and deployed by `.github/workflows/deploy.yml`.
+
+Configure these repository variables:
+
+- `AWS_REGION`: AWS region for the S3 bucket, for example `eu-west-1`. Defaults to `eu-west-1` if unset.
+- `S3_BUCKET`: value from `tofu -chdir=infra output -raw bucket_name`.
+- `CLOUDFRONT_DISTRIBUTION_ID`: value from `tofu -chdir=infra output -raw cloudfront_distribution_id`.
+
+Configure this repository secret:
+
+- `AWS_ROLE_TO_ASSUME`: IAM role ARN trusted by GitHub Actions OIDC.
+
+The IAM role needs these permissions:
+
+- `s3:ListBucket` on the site bucket.
+- `s3:PutObject` and `s3:DeleteObject` on objects in the site bucket.
+- `cloudfront:CreateInvalidation` on the site distribution.
