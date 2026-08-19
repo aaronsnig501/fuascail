@@ -12,15 +12,10 @@
   } from '$lib/purchases';
   import {
     CONTENT_BANK,
-    RECENT_CONTENT_WINDOW_DAYS,
-    getDateKey,
     getPuzzleCategories,
-    recordServedContent,
     selectContentForCategory,
-    selectContentForDate,
     selectNextContent,
-    type PuzzleContent,
-    type ServedContentRecord
+    type PuzzleContent
   } from '$lib/content';
   import type { DifficultyTier, LivesMode, OrthographyMode, WrongGuessesByNumber } from '$lib/substitution';
   import {
@@ -33,8 +28,6 @@
     getLifeCount
   } from '$lib/substitution';
 
-  const servedContentStorageKey = 'fuascail.recentlyServedContent';
-  const todayKey = getDateKey(new Date());
   const difficultyLabels: Record<DifficultyTier, string> = {
     easy: 'Éasca',
     medium: 'Meánach',
@@ -49,7 +42,7 @@
   let difficulty = $state<DifficultyTier>('medium');
   let livesMode = $state<LivesMode>('teoranta');
   let puzzleSeed = $state(1);
-  let selectedContent: PuzzleContent = $state(selectContentForDate(CONTENT_BANK, todayKey));
+  let selectedContent: PuzzleContent = $state(getDefaultContent());
   let selectedCategorySlug: string | null = $state(null);
   let selectedNumber: number | null = $state(null);
   let guesses: Record<number, string> = $state({});
@@ -86,7 +79,7 @@
   let selectedCategory = $derived(
     puzzleCategories.find((category) => category.slug === selectedCategorySlug)
   );
-  let puzzleContextLabel = $derived(selectedCategory?.label ?? 'Puzal Laethúil');
+  let puzzleContextLabel = $derived(selectedCategory?.label ?? 'Puzal');
 
   onMount(() => {
     void initializePurchases().finally(() => {
@@ -156,24 +149,14 @@
       return;
     }
 
-    startDailyPuzzle(false);
+    startDefaultPuzzle(false);
   }
 
-  function startDailyPuzzle(pushHistory = true): void {
-    const servedRecords = loadServedContentRecords();
-
+  function startDefaultPuzzle(pushHistory = true): void {
     selectedCategorySlug = null;
-    selectedContent = selectContentForDate(CONTENT_BANK, todayKey, servedRecords);
+    selectedContent = getDefaultContent();
     difficulty = selectedContent.difficulty_tier;
     playView = 'puzzle';
-    saveServedContentRecords(
-      recordServedContent(
-        servedRecords,
-        selectedContent.id,
-        todayKey,
-        RECENT_CONTENT_WINDOW_DAYS
-      )
-    );
 
     if (pushHistory) {
       history.pushState(history.state, '', '/play');
@@ -184,7 +167,7 @@
   }
 
   function startCategoryPuzzle(categorySlug: string, pushHistory = true): void {
-    selectedContent = selectContentForCategory(CONTENT_BANK, categorySlug, todayKey);
+    selectedContent = selectContentForCategory(CONTENT_BANK, categorySlug, '');
     selectedCategorySlug = categorySlug;
     difficulty = selectedContent.difficulty_tier;
     playView = 'puzzle';
@@ -211,6 +194,16 @@
     if (pushHistory) {
       history.pushState(history.state, '', '/play?view=categories');
     }
+  }
+
+  function getDefaultContent(): PuzzleContent {
+    const firstContent = CONTENT_BANK[0];
+
+    if (firstContent === undefined) {
+      throw new Error('Cannot start a puzzle from an empty content bank.');
+    }
+
+    return firstContent;
   }
 
   function resetProgress(nextLivesLeft: number): void {
@@ -331,40 +324,6 @@
     };
   }
 
-  function loadServedContentRecords(): ServedContentRecord[] {
-    const storedValue = localStorage.getItem(servedContentStorageKey);
-
-    if (storedValue === null) {
-      return [];
-    }
-
-    try {
-      const parsedValue: unknown = JSON.parse(storedValue);
-
-      if (!Array.isArray(parsedValue)) {
-        return [];
-      }
-
-      return parsedValue.filter(isServedContentRecord);
-    } catch {
-      return [];
-    }
-  }
-
-  function saveServedContentRecords(records: readonly ServedContentRecord[]): void {
-    localStorage.setItem(servedContentStorageKey, JSON.stringify(records));
-  }
-
-  function isServedContentRecord(value: unknown): value is ServedContentRecord {
-    return (
-      typeof value === 'object' &&
-      value !== null &&
-      'id' in value &&
-      'servedOn' in value &&
-      typeof value.id === 'string' &&
-      typeof value.servedOn === 'string'
-    );
-  }
 </script>
 
 <svelte:head>
@@ -411,9 +370,9 @@
         <button
           type="button"
           class="font-utility border border-[var(--vermilion-dim)] bg-[var(--vermilion-dim)] px-4 py-2 text-[10.5px] tracking-[0.06em] text-[var(--cream)] uppercase"
-          onclick={() => startDailyPuzzle()}
+          onclick={() => startDefaultPuzzle()}
         >
-          Puzal Laethúil
+          Tosaigh Puzal
         </button>
       </div>
 
@@ -436,7 +395,7 @@
     {:else}
     <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <p class="font-utility mb-3 text-[11px] tracking-[0.14em] text-[var(--cream-dim)] uppercase">Inniu · {puzzleContextLabel}</p>
+        <p class="font-utility mb-3 text-[11px] tracking-[0.14em] text-[var(--cream-dim)] uppercase">{puzzleContextLabel}</p>
         <h1 id="puzzle-title" class="font-display text-center text-2xl font-normal tracking-wide text-[var(--cream)] lg:text-left lg:text-4xl">
           Fuascail {selectedCategory === undefined ? 'an Puzal' : selectedCategory.label}
         </h1>

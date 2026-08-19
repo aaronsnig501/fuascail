@@ -5,14 +5,10 @@ import {
   CONTENT_BANK_TARGET_SIZE,
   getContentBankReadiness,
   getContentByCategory,
-  getDateKey,
   getPuzzleCategories,
   getProductionReadyContentBank,
   isPublicDomainByAuthorDeathYear,
-  pruneServedRecords,
-  recordServedContent,
   selectContentForCategory,
-  selectContentForDate,
   selectNextContent,
   validatePuzzleContent,
   type PuzzleContent
@@ -250,7 +246,7 @@ describe('content selection', () => {
     );
   });
 
-  it('selects the next content item without mutating served daily records', () => {
+  it('selects the next content item from the full bank', () => {
     expect(selectNextContent(bank, 'a').id).toBe('b');
     expect(selectNextContent(bank, 'c').id).toBe('a');
     expect(selectNextContent(bank, 'missing').id).toBe('a');
@@ -335,77 +331,5 @@ describe('content selection', () => {
     expect(isPublicDomainByAuthorDeathYear({ author_death_year: 1956 }, 2026)).toBe(true);
     expect(isPublicDomainByAuthorDeathYear({ author_death_year: 1957 }, 2026)).toBe(false);
     expect(isPublicDomainByAuthorDeathYear({ author_death_year: 0 }, 2026)).toBe(false);
-  });
-
-  it('selects deterministically from the same bank and date key', () => {
-    const firstSelection = selectContentForDate(bank, '2026-08-02');
-    const secondSelection = selectContentForDate(bank, '2026-08-02');
-
-    expect(secondSelection).toBe(firstSelection);
-  });
-
-  it('avoids recently served IDs when another item is available', () => {
-    const selected = selectContentForDate(bank, '2026-08-02');
-    const alternate = selectContentForDate(bank, '2026-08-03', [
-      { id: selected.id, servedOn: '2026-08-01' }
-    ]);
-
-    expect(alternate.id).not.toBe(selected.id);
-  });
-
-  it('keeps the already served item for the same date', () => {
-    expect(
-      selectContentForDate(bank, '2026-08-02', [{ id: 'b', servedOn: '2026-08-02' }]).id
-    ).toBe('b');
-  });
-
-  it('prunes served IDs outside the rolling window', () => {
-    expect(
-      pruneServedRecords(
-        [
-          { id: 'old', servedOn: '2026-06-01' },
-          { id: 'recent', servedOn: '2026-07-01' }
-        ],
-        '2026-08-02',
-        60
-      )
-    ).toEqual([{ id: 'recent', servedOn: '2026-07-01' }]);
-  });
-
-  it('records served content once for the same ID and date', () => {
-    expect(
-      recordServedContent(
-        [
-          { id: 'a', servedOn: '2026-08-02' },
-          { id: 'b', servedOn: '2026-08-01' }
-        ],
-        'a',
-        '2026-08-02'
-      )
-    ).toEqual([
-      { id: 'b', servedOn: '2026-08-01' },
-      { id: 'a', servedOn: '2026-08-02' }
-    ]);
-  });
-
-  it('keeps only one served content record per date', () => {
-    expect(
-      recordServedContent(
-        [
-          { id: 'a', servedOn: '2026-08-02' },
-          { id: 'b', servedOn: '2026-08-02' },
-          { id: 'c', servedOn: '2026-08-01' }
-        ],
-        'b',
-        '2026-08-02'
-      )
-    ).toEqual([
-      { id: 'c', servedOn: '2026-08-01' },
-      { id: 'b', servedOn: '2026-08-02' }
-    ]);
-  });
-
-  it('formats dates as stable keys', () => {
-    expect(getDateKey(new Date('2026-08-02T23:59:00.000Z'))).toBe('2026-08-02');
   });
 });
