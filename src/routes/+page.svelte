@@ -21,6 +21,8 @@
   import type { DifficultyTier, LivesMode, OrthographyMode, WrongGuessesByNumber } from '$lib/substitution';
   import {
     DIFFICULTY_SETTINGS,
+    DOT_LETTERS,
+    FADA_LETTERS,
     createSubstitutionPuzzle,
     evaluateGuess,
     getHintAllowance,
@@ -35,6 +37,7 @@
     hard: 'Crua',
     expert: 'Saineolaí'
   };
+  const baseKeyboardLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
   let mode = $state<OrthographyMode>('digraf');
   let difficulty = $state<DifficultyTier>('medium');
@@ -78,6 +81,8 @@
       void initializeAds();
     });
 
+    window.addEventListener('keydown', handlePhysicalKeyboardGuess);
+
     const servedRecords = loadServedContentRecords();
     selectedContent = selectContentForDate(CONTENT_BANK, todayKey, servedRecords);
     difficulty = selectedContent.difficulty_tier;
@@ -90,6 +95,10 @@
       )
     );
     resetProgress(getLifeCount(selectedContent.difficulty_tier));
+
+    return () => {
+      window.removeEventListener('keydown', handlePhysicalKeyboardGuess);
+    };
   });
 
   $effect(() => {
@@ -164,6 +173,29 @@
     status = evaluation.newWrongGuess
       ? `mícheart: ${selectedNumber} ≠ ${evaluation.letter}`
       : `triailte cheana: ${selectedNumber} ≠ ${evaluation.letter}`;
+  }
+
+  function handlePhysicalKeyboardGuess(event: KeyboardEvent): void {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.key.length !== 1) {
+      return;
+    }
+
+    const letter = event.key.toLocaleUpperCase('ga-IE');
+
+    if (!getAllowedKeyboardLetters().includes(letter) || solvedLetters.includes(letter)) {
+      return;
+    }
+
+    if (selectedNumber !== null && !locked) {
+      event.preventDefault();
+      guessLetter(letter);
+    }
+  }
+
+  function getAllowedKeyboardLetters(): readonly string[] {
+    return mode === 'trad'
+      ? [...baseKeyboardLetters, ...FADA_LETTERS, ...DOT_LETTERS]
+      : [...baseKeyboardLetters, ...FADA_LETTERS];
   }
 
   function useHint(): void {
@@ -243,7 +275,13 @@
 </svelte:head>
 
 <main class="app-shell flex items-center justify-center bg-[radial-gradient(ellipse_at_top,#241f19_0%,var(--charcoal-deep)_62%)] text-[var(--cream)]">
-  <section class="puzzle-card w-full max-w-[460px] border border-[var(--charcoal-line)] bg-[var(--charcoal-surface)] px-5 py-6 shadow-2xl [border-top:3px_solid_var(--vermilion)]">
+  <section
+    class="puzzle-card w-full max-w-[460px] border border-[var(--charcoal-line)] bg-[var(--charcoal-surface)] px-5 py-6 shadow-2xl [border-top:3px_solid_var(--vermilion)]"
+    aria-labelledby="puzzle-title"
+  >
+    <p id="cipher-instructions" class="sr-only">
+      Roghnaigh cill uimhrithe sa téacs rúin, ansin roghnaigh litir ón méarchlár ar an scáileán nó brúigh litir ar an méarchlár fisiciúil.
+    </p>
     <div class="mb-3 flex items-center justify-between gap-3">
       <p class="font-utility text-[11px] tracking-[0.14em] text-[var(--cream-dim)] uppercase">Inniu · Seanfhocal</p>
       <div class="font-utility flex border border-[var(--charcoal-line)] text-[10px] tracking-[0.08em] uppercase">
@@ -324,7 +362,7 @@
       {/if}
     </div>
 
-    <h1 class="font-display mb-5 text-center text-2xl font-normal tracking-wide text-[var(--cream)]">Fuascail an Seanfhocal</h1>
+    <h1 id="puzzle-title" class="font-display mb-5 text-center text-2xl font-normal tracking-wide text-[var(--cream)]">Fuascail an Seanfhocal</h1>
 
     <CipherText
       text={phrase}
@@ -339,21 +377,27 @@
     <CipherKeyboard
       {mode}
       {solvedLetters}
-      disabled={locked}
+      disabled={locked || selectedNumber === null}
       onpress={guessLetter}
     />
 
     <div class="mt-4 border-y border-[var(--charcoal-line)] px-2 py-3">
       {#if resultKind === null}
-        <p class="font-utility text-center text-xs text-[var(--cream-dim)]">{status}</p>
+        <p class="font-utility text-center text-xs text-[var(--cream-dim)]" aria-live="polite">{status}</p>
       {:else}
-        <div class="text-center">
-          <p class="font-utility mb-3 text-[10px] tracking-[0.14em] text-[var(--vermilion-bright)] uppercase">
+        <div
+          class="text-center"
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="reveal-title"
+          aria-describedby="reveal-answer reveal-note"
+        >
+          <p id="reveal-title" class="font-utility mb-3 text-[10px] tracking-[0.14em] text-[var(--vermilion-bright)] uppercase">
             {resultEyebrow}
           </p>
-          <p class="font-display mb-4 text-2xl leading-snug text-[var(--cream)]">{phrase}</p>
+          <p id="reveal-answer" class="font-display mb-4 text-2xl leading-snug text-[var(--cream)]">{phrase}</p>
 
-          <p class="border-t border-[var(--charcoal-line)] pt-4 text-left text-sm leading-6 text-[var(--cream-dim)]">
+          <p id="reveal-note" class="border-t border-[var(--charcoal-line)] pt-4 text-left text-sm leading-6 text-[var(--cream-dim)]">
             {selectedContent.provenance_note}
           </p>
         </div>

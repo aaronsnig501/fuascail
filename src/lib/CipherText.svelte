@@ -28,14 +28,37 @@
     return solvedNumberSet.has(number);
   }
 
+  function getCellAriaLabel(number: number, solved: boolean): string {
+    const guessedLetter = guesses[number];
+
+    if (solved) {
+      return `Cill uimhir ${number}, réitithe mar ${numberToLetter[number] ?? ''}`;
+    }
+
+    if (selectedNumber === number) {
+      return `Cill uimhir ${number}, roghnaithe`;
+    }
+
+    if (guessedLetter !== undefined) {
+      return `Cill uimhir ${number}, buille faoi thuairim ${guessedLetter}`;
+    }
+
+    return `Cill uimhir ${number}, gan réiteach`;
+  }
+
   function normalizeNumberSet(numbers: ReadonlySet<number> | readonly number[]): ReadonlySet<number> {
     return numbers instanceof Set ? numbers : new Set(numbers);
   }
 </script>
 
-<div class="flex min-h-36 flex-wrap content-start justify-center gap-y-1 px-1.5 py-2" aria-label="Téacs rúin">
-  {#each words as word}
-    <div class="my-1.5 mr-3 flex" role="group" aria-label="Focal">
+<div
+  class="flex min-h-36 flex-wrap content-start justify-center gap-y-1 px-1.5 py-2"
+  role="group"
+  aria-label="Téacs rúin"
+  aria-describedby="cipher-instructions"
+>
+  {#each words as word, wordIndex}
+    <div class="my-1.5 mr-3 flex" role="group" aria-label={`Focal ${wordIndex + 1}`}>
       {#each word.cells as cell}
         {#if cell.kind === 'letter'}
           {@const solved = isSolved(cell.number)}
@@ -47,7 +70,7 @@
               solved ? 'text-[var(--vermilion-bright)]' : '',
               disabled ? 'cursor-default' : 'cursor-pointer'
             ]}
-            aria-label={`Uimhir ${cell.number}`}
+            aria-label={getCellAriaLabel(cell.number, solved)}
             aria-pressed={selectedNumber === cell.number}
             disabled={disabled || solved}
             onclick={() => selectNumber(cell.number)}

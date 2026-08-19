@@ -27,14 +27,24 @@
     return solvedLetterSet.has(letter);
   }
 
+  function getLetterLabel(letter: string): string {
+    return isUsed(letter) ? `Litir ${letter}, réitithe cheana` : `Buille faoi thuairim: litir ${letter}`;
+  }
+
   function normalizeLetterSet(letters: ReadonlySet<string> | readonly string[]): ReadonlySet<string> {
     return letters instanceof Set ? letters : new Set(letters);
   }
 </script>
 
-<div class:opacity-35={disabled} class:pointer-events-none={disabled} class="flex flex-col gap-1.5">
-  {#each baseRows as row}
-    <div class="flex justify-center gap-1.5">
+<div
+  class:opacity-35={disabled}
+  class="flex flex-col gap-1.5"
+  role="group"
+  aria-label="Méarchlár litreacha don tomhas"
+  aria-disabled={disabled}
+>
+  {#each baseRows as row, rowIndex}
+    <div class="flex justify-center gap-1.5" role="group" aria-label={`Sraith litreacha ${rowIndex + 1}`}>
       {#each row as letter}
         <button
           type="button"
@@ -42,8 +52,8 @@
             'font-utility h-9 w-7 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-[13px] font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
             isUsed(letter) ? 'opacity-35' : ''
           ]}
-          aria-label={`Litir ${letter}`}
-          disabled={disabled}
+          aria-label={getLetterLabel(letter)}
+          disabled={disabled || isUsed(letter)}
           onclick={() => pressLetter(letter)}
         >
           {letter}
@@ -52,7 +62,7 @@
     </div>
   {/each}
 
-  <div class="flex justify-center gap-1.5">
+  <div class="flex justify-center gap-1.5" role="group" aria-label="Gutaí fada">
     {#each FADA_LETTERS as letter}
       <button
         type="button"
@@ -60,8 +70,8 @@
           'font-utility h-9 w-8 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-xs font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
           isUsed(letter) ? 'opacity-35' : ''
         ]}
-        aria-label={`Litir ${letter}`}
-        disabled={disabled}
+        aria-label={getLetterLabel(letter)}
+        disabled={disabled || isUsed(letter)}
         onclick={() => pressLetter(letter)}
       >
         {letter}
@@ -70,7 +80,7 @@
   </div>
 
   {#if mode === 'trad'}
-    <div class="flex justify-center gap-1.5">
+    <div class="flex justify-center gap-1.5" role="group" aria-label="Consain le ponc séimhithe">
       {#each DOT_LETTERS as letter}
         <button
           type="button"
@@ -78,8 +88,8 @@
             'font-utility h-9 w-8 border border-[var(--charcoal-line)] bg-[var(--charcoal-raised)] text-center text-xs font-medium text-[var(--cream)] transition hover:bg-[var(--charcoal-hover)] focus:outline-none focus-visible:border-[var(--vermilion)]',
             isUsed(letter) ? 'opacity-35' : ''
           ]}
-          aria-label={`Litir ${letter}`}
-          disabled={disabled}
+          aria-label={getLetterLabel(letter)}
+          disabled={disabled || isUsed(letter)}
           onclick={() => pressLetter(letter)}
         >
           {letter}
