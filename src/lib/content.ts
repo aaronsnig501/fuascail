@@ -50,11 +50,6 @@ export type ContentBankReadiness = {
   readyForProduction: boolean;
 };
 
-export type ServedContentRecord = {
-  id: string;
-  servedOn: string;
-};
-
 export type PuzzleCategory = {
   slug: string;
   category: string;
@@ -63,8 +58,6 @@ export type PuzzleCategory = {
   count: number;
   difficultyTiers: DifficultyTier[];
 };
-
-export const RECENT_CONTENT_WINDOW_DAYS = 60;
 
 const CATEGORY_PRESENTATION: Record<string, Pick<PuzzleCategory, 'label' | 'description'>> = {
   seanfhocal: {
@@ -307,10 +300,6 @@ export function isPublicDomainByAuthorDeathYear(
   return item.author_death_year > 0 && asOfYear - item.author_death_year >= PUBLIC_DOMAIN_AUTHOR_DEATH_YEARS;
 }
 
-export function getDateKey(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
 export function getPuzzleCategories(bank: readonly PuzzleContent[]): PuzzleCategory[] {
   const groupedItems = new Map<string, PuzzleContent[]>();
 
@@ -400,68 +389,6 @@ export function selectNextContent(
   return selectedItem;
 }
 
-export function selectContentForDate(
-  bank: readonly PuzzleContent[],
-  dateKey: string,
-  servedRecords: readonly ServedContentRecord[] = [],
-  rollingWindowDays = RECENT_CONTENT_WINDOW_DAYS
-): PuzzleContent {
-  if (bank.length === 0) {
-    throw new Error('Cannot select content from an empty bank.');
-  }
-
-  const sameDayRecord = servedRecords.find((record) => record.servedOn === dateKey);
-  const sameDayItem = bank.find((item) => item.id === sameDayRecord?.id);
-
-  if (sameDayItem !== undefined) {
-    return sameDayItem;
-  }
-
-  const recentIds = new Set(
-    pruneServedRecords(servedRecords, dateKey, rollingWindowDays).map((record) => record.id)
-  );
-  const eligibleItems = bank.filter((item) => !recentIds.has(item.id));
-  const selectionPool = eligibleItems.length > 0 ? eligibleItems : bank;
-  const index = hashDateKey(dateKey) % selectionPool.length;
-  const selectedItem = selectionPool[index];
-
-  if (selectedItem === undefined) {
-    throw new Error('Unable to select content.');
-  }
-
-  return selectedItem;
-}
-
-export function recordServedContent(
-  servedRecords: readonly ServedContentRecord[],
-  itemId: string,
-  dateKey: string,
-  rollingWindowDays = RECENT_CONTENT_WINDOW_DAYS
-): ServedContentRecord[] {
-  const prunedRecords = pruneServedRecords(servedRecords, dateKey, rollingWindowDays);
-  const withoutSameDateDuplicate = prunedRecords.filter(
-    (record) => record.servedOn !== dateKey
-  );
-
-  return [...withoutSameDateDuplicate, { id: itemId, servedOn: dateKey }];
-}
-
-export function pruneServedRecords(
-  servedRecords: readonly ServedContentRecord[],
-  dateKey: string,
-  rollingWindowDays = RECENT_CONTENT_WINDOW_DAYS
-): ServedContentRecord[] {
-  return servedRecords.filter((record) => {
-    const daysAgo = getDateKeyDistance(record.servedOn, dateKey);
-
-    return daysAgo >= 0 && daysAgo < rollingWindowDays;
-  });
-}
-
-function hashDateKey(dateKey: string): number {
-  return hashString(dateKey);
-}
-
 function hashString(value: string): number {
   let hash = 0;
 
@@ -485,10 +412,6 @@ function getOrderedDifficultyTiers(items: readonly PuzzleContent[]): DifficultyT
   const tiers = new Set(items.map((item) => item.difficulty_tier));
 
   return order.filter((tier) => tiers.has(tier));
-}
-
-function getDateKeyDistance(fromDateKey: string, toDateKey: string): number {
-  return (parseDateKey(toDateKey) - parseDateKey(fromDateKey)) / 86_400_000;
 }
 
 function parseDateKey(dateKey: string): number {

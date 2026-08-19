@@ -15,7 +15,7 @@
         class="border border-[var(--vermilion-dim)] bg-[var(--vermilion-dim)] px-4 py-3 text-center text-[var(--cream)]"
         href="/play"
       >
-        Tosaigh an Puzal Laethúil
+        Tosaigh Puzal
       </a>
 
       <a
