@@ -2,18 +2,25 @@
   import { DOT_LETTERS, FADA_LETTERS } from './substitution';
   import type { OrthographyMode } from './substitution';
 
-  export let mode: OrthographyMode = 'digraf';
-  export let solvedLetters: ReadonlySet<string> | readonly string[] = [];
-  export let disabled = false;
-  export let onpress: (letter: string) => void = () => {};
+  type Props = {
+    mode?: OrthographyMode;
+    solvedLetters?: readonly string[];
+    disabled?: boolean;
+    onpress?: (letter: string) => void;
+  };
+
+  let {
+    mode = 'digraf',
+    solvedLetters = [],
+    disabled = false,
+    onpress = () => {}
+  }: Props = $props();
 
   const baseRows = [
     ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
     ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
     ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
   ] as const;
-
-  $: solvedLetterSet = normalizeLetterSet(solvedLetters);
 
   function pressLetter(letter: string): void {
     if (disabled) {
@@ -24,20 +31,17 @@
   }
 
   function isUsed(letter: string): boolean {
-    return solvedLetterSet.has(letter);
+    return solvedLetters.includes(letter);
   }
 
   function getLetterLabel(letter: string): string {
     return isUsed(letter) ? `Litir ${letter}, réitithe cheana` : `Buille faoi thuairim: litir ${letter}`;
   }
 
-  function normalizeLetterSet(letters: ReadonlySet<string> | readonly string[]): ReadonlySet<string> {
-    return letters instanceof Set ? letters : new Set(letters);
-  }
 </script>
 
 <div
-  class:opacity-35={disabled}
+  class:pointer-events-none={disabled}
   class="cipher-keyboard flex flex-col gap-1.5"
   role="group"
   aria-label="Méarchlár litreacha don tomhas"
@@ -53,7 +57,7 @@
             isUsed(letter) ? 'opacity-35' : ''
           ]}
           aria-label={getLetterLabel(letter)}
-          disabled={disabled || isUsed(letter)}
+          disabled={isUsed(letter)}
           onclick={() => pressLetter(letter)}
         >
           {letter}
@@ -71,7 +75,7 @@
           isUsed(letter) ? 'opacity-35' : ''
         ]}
         aria-label={getLetterLabel(letter)}
-        disabled={disabled || isUsed(letter)}
+        disabled={isUsed(letter)}
         onclick={() => pressLetter(letter)}
       >
         {letter}
@@ -89,7 +93,7 @@
             isUsed(letter) ? 'opacity-35' : ''
           ]}
           aria-label={getLetterLabel(letter)}
-          disabled={disabled || isUsed(letter)}
+          disabled={isUsed(letter)}
           onclick={() => pressLetter(letter)}
         >
           {letter}
