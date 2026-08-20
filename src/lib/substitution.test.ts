@@ -23,6 +23,7 @@ import {
   getHintAllowance,
   getLifeCount,
   getStarterCount,
+  getVisibleSolvedLetters,
   isSubstitutionLetter,
   selectStarterNumbers
 } from './substitution';
@@ -151,6 +152,55 @@ describe('substitution logic', () => {
     expect(newWrong).toMatchObject({ correct: false, newWrongGuess: true });
     expect(correct).toMatchObject({ correct: true, newWrongGuess: false });
     expect(newWrong.wrongGuessesByNumber).toEqual({ 7: ['B', 'C'] });
+  });
+
+  it('derives used keyboard letters from visible starter letters', () => {
+    expect(
+      getVisibleSolvedLetters(
+        'A H R N Z',
+        { A: 1, H: 2, R: 3, N: 4, Z: 5 },
+        { 1: 'A', 2: 'H', 3: 'R', 4: 'N', 5: 'Z' },
+        {},
+        [1, 2, 3, 4]
+      )
+    ).toEqual(['A', 'H', 'R', 'N']);
+  });
+
+  it('derives used keyboard letters from correct guesses and hints only', () => {
+    expect(
+      getVisibleSolvedLetters(
+        'A H R',
+        { A: 1, H: 2, R: 3 },
+        { 1: 'A', 2: 'H', 3: 'R' },
+        { 2: 'H', 3: 'X' },
+        [1, 2]
+      )
+    ).toEqual(['A', 'H']);
+  });
+
+  it('reveals every visible answer letter when the puzzle is locked', () => {
+    expect(
+      getVisibleSolvedLetters(
+        'Abba!',
+        { A: 2, B: 1 },
+        { 1: 'B', 2: 'A' },
+        {},
+        [],
+        { revealAnswer: true }
+      )
+    ).toEqual(['A', 'B']);
+  });
+
+  it('ignores stale solved numbers that are not visible in the current puzzle', () => {
+    expect(
+      getVisibleSolvedLetters(
+        'B',
+        { B: 2 },
+        { 2: 'B' },
+        {},
+        [1]
+      )
+    ).toEqual([]);
   });
 });
 

@@ -76,6 +76,10 @@ export type GuessEvaluation = {
   wrongGuessesByNumber: WrongGuessesByNumber;
 };
 
+export type VisibleSolvedLetterOptions = {
+  revealAnswer?: boolean;
+};
+
 const BASIC_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const SUBSTITUTION_LETTERS = new Set<string>([
   ...BASIC_LETTERS,
@@ -222,6 +226,44 @@ export function buildCipherWords(
         };
       })
     }));
+}
+
+export function getVisibleSolvedLetters(
+  text: string,
+  letterToNumber: Readonly<Record<string, number>>,
+  numberToLetter: Readonly<Record<number, string>>,
+  guesses: Readonly<Record<number, string>>,
+  solvedNumbers: ReadonlySet<number> | readonly number[],
+  options: VisibleSolvedLetterOptions = {}
+): string[] {
+  const visibleLetters = new Set<string>();
+  const solvedNumberSet = solvedNumbers instanceof Set ? solvedNumbers : new Set(solvedNumbers);
+
+  for (const word of buildCipherWords(text, letterToNumber)) {
+    for (const cell of word.cells) {
+      if (cell.kind !== 'letter') {
+        continue;
+      }
+
+      if (options.revealAnswer === true) {
+        visibleLetters.add(numberToLetter[cell.number] ?? cell.letter);
+        continue;
+      }
+
+      if (solvedNumberSet.has(cell.number)) {
+        visibleLetters.add(numberToLetter[cell.number] ?? cell.letter);
+        continue;
+      }
+
+      const guessedLetter = guesses[cell.number];
+
+      if (guessedLetter !== undefined && numberToLetter[cell.number] === guessedLetter) {
+        visibleLetters.add(guessedLetter);
+      }
+    }
+  }
+
+  return [...visibleLetters];
 }
 
 export function evaluateGuess(

@@ -17,7 +17,13 @@
     selectNextContent,
     type PuzzleContent
   } from '$lib/content';
-  import type { DifficultyTier, LivesMode, OrthographyMode, WrongGuessesByNumber } from '$lib/substitution';
+  import type {
+    DifficultyTier,
+    LivesMode,
+    OrthographyMode,
+    SubstitutionPuzzle,
+    WrongGuessesByNumber
+  } from '$lib/substitution';
   import {
     DIFFICULTY_SETTINGS,
     DOT_LETTERS,
@@ -25,7 +31,8 @@
     createSubstitutionPuzzle,
     evaluateGuess,
     getHintAllowance,
-    getLifeCount
+    getLifeCount,
+    getVisibleSolvedLetters
   } from '$lib/substitution';
 
   const difficultyLabels: Record<DifficultyTier, string> = {
@@ -36,28 +43,28 @@
   };
   const baseKeyboardLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const puzzleCategories = getPuzzleCategories(CONTENT_BANK);
+  const initialContent = getDefaultContent();
+  const initialDifficulty = initialContent.difficulty_tier;
 
   let playView = $state<'puzzle' | 'categories'>('puzzle');
   let mode = $state<OrthographyMode>('digraf');
-  let difficulty = $state<DifficultyTier>('medium');
+  let difficulty = $state<DifficultyTier>(initialDifficulty);
   let livesMode = $state<LivesMode>('teoranta');
   let puzzleSeed = $state(1);
-  let selectedContent: PuzzleContent = $state(getDefaultContent());
+  let selectedContent: PuzzleContent = $state(initialContent);
+  let puzzle: SubstitutionPuzzle = $state(createPuzzle(initialContent, 'digraf', initialDifficulty, 1));
   let selectedCategorySlug: string | null = $state(null);
   let selectedNumber: number | null = $state(null);
   let guesses: Record<number, string> = $state({});
   let wrongGuessesByNumber: WrongGuessesByNumber = $state({});
   let hintsUsed = $state(0);
-  let livesLeft = $state(getLifeCount('medium'));
+  let livesLeft = $state(getLifeCount(initialDifficulty));
   let status = $state('roghnaigh cill chun tosú');
   let puzzleAttempt = $state(0);
   let showHowTo = $state(false);
   let lastAdCompletionKey: string | null = null;
 
   let phrase = $derived(mode === 'trad' ? selectedContent.text_trad : selectedContent.text_digraf);
-  let puzzle = $derived(
-    createSubstitutionPuzzle(phrase, difficulty, seededRandomFromSeed(puzzleSeed))
-  );
   let hintAllowance = $derived(getHintAllowance(difficulty));
   let lifeCount = $derived(getLifeCount(difficulty));
   let correctGuessNumbers = $derived(
@@ -66,7 +73,6 @@
       .map(([number]) => Number(number))
   );
   let solvedNumbers = $derived([...puzzle.starterNumbers, ...correctGuessNumbers]);
-  let solvedLetters = $derived(solvedNumbers.map((number) => puzzle.numberToLetter[number] ?? ''));
   let remainingHints = $derived(Math.max(0, hintAllowance - hintsUsed));
   let complete = $derived(
     Object.keys(puzzle.numberToLetter)
@@ -75,6 +81,11 @@
   );
   let resultKind = $derived(complete ? 'solved' : livesMode === 'teoranta' && livesLeft <= 0 ? 'shown' : null);
   let locked = $derived(resultKind !== null);
+  let visibleSolvedLetters = $derived(
+    getVisibleSolvedLetters(phrase, puzzle.letterToNumber, puzzle.numberToLetter, guesses, solvedNumbers, {
+      revealAnswer: resultKind !== null
+    })
+  );
   let resultEyebrow = $derived(resultKind === 'solved' ? 'Réitithe' : 'Seo é');
   let selectedCategory = $derived(
     puzzleCategories.find((category) => category.slug === selectedCategorySlug)
@@ -114,11 +125,13 @@
 
     mode = nextMode;
     puzzleSeed += 1;
+    rebuildPuzzle();
     resetProgress(getLifeCount(difficulty));
   }
 
   function setDifficulty(nextDifficulty: DifficultyTier): void {
     difficulty = nextDifficulty;
+    rebuildPuzzle();
     resetProgress(getLifeCount(nextDifficulty));
   }
 
@@ -163,6 +176,7 @@
     }
 
     puzzleSeed += 1;
+    rebuildPuzzle();
     resetProgress(getLifeCount(selectedContent.difficulty_tier));
   }
 
@@ -177,6 +191,7 @@
     }
 
     puzzleSeed += 1;
+    rebuildPuzzle();
     resetProgress(getLifeCount(selectedContent.difficulty_tier));
   }
 
@@ -184,6 +199,7 @@
     selectedContent = selectNextContent(CONTENT_BANK, selectedContent.id, selectedCategorySlug);
     playView = 'puzzle';
     puzzleSeed += 1;
+    rebuildPuzzle();
     resetProgress(getLifeCount(difficulty));
   }
 
@@ -204,6 +220,23 @@
     }
 
     return firstContent;
+  }
+
+  function rebuildPuzzle(): void {
+    puzzle = createPuzzle(selectedContent, mode, difficulty, puzzleSeed);
+  }
+
+  function createPuzzle(
+    content: PuzzleContent,
+    orthographyMode: OrthographyMode,
+    tier: DifficultyTier,
+    seed: number
+  ): SubstitutionPuzzle {
+    return createSubstitutionPuzzle(
+      orthographyMode === 'trad' ? content.text_trad : content.text_digraf,
+      tier,
+      seededRandomFromSeed(seed)
+    );
   }
 
   function resetProgress(nextLivesLeft: number): void {
@@ -272,7 +305,7 @@
 
     const letter = event.key.toLocaleUpperCase('ga-IE');
 
-    if (!getAllowedKeyboardLetters().includes(letter) || solvedLetters.includes(letter)) {
+    if (!getAllowedKeyboardLetters().includes(letter) || visibleSolvedLetters.includes(letter)) {
       return;
     }
 
@@ -539,12 +572,14 @@
           {/if}
         </div>
 
-        <CipherKeyboard
-          {mode}
-          {solvedLetters}
-          disabled={locked || selectedNumber === null}
-          onpress={guessLetter}
-        />
+        {#key `${mode}:${puzzleSeed}:${visibleSolvedLetters.join('|')}`}
+          <CipherKeyboard
+            {mode}
+            solvedLetters={visibleSolvedLetters}
+            disabled={locked}
+            onpress={guessLetter}
+          />
+        {/key}
 
         <div class="mt-4 flex gap-2 lg:mt-6">
           <button
