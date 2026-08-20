@@ -26,10 +26,9 @@
   } from '$lib/substitution';
   import {
     DIFFICULTY_SETTINGS,
-    DOT_LETTERS,
-    FADA_LETTERS,
     createSubstitutionPuzzle,
     evaluateGuess,
+    getAllowedKeyboardLetters,
     getHintAllowance,
     getLifeCount,
     getVisibleSolvedLetters
@@ -41,7 +40,6 @@
     hard: 'Crua',
     expert: 'Saineolaí'
   };
-  const baseKeyboardLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const puzzleCategories = getPuzzleCategories(CONTENT_BANK);
   const initialContent = getDefaultContent();
   const initialDifficulty = initialContent.difficulty_tier;
@@ -86,6 +84,7 @@
       revealAnswer: resultKind !== null
     })
   );
+  let keyboardLetters = $derived(getAllowedKeyboardLetters(mode, puzzle.uniqueLetters));
   let resultEyebrow = $derived(resultKind === 'solved' ? 'Réitithe' : 'Seo é');
   let selectedCategory = $derived(
     puzzleCategories.find((category) => category.slug === selectedCategorySlug)
@@ -305,7 +304,7 @@
 
     const letter = event.key.toLocaleUpperCase('ga-IE');
 
-    if (!getAllowedKeyboardLetters().includes(letter) || visibleSolvedLetters.includes(letter)) {
+    if (!keyboardLetters.includes(letter) || visibleSolvedLetters.includes(letter)) {
       return;
     }
 
@@ -313,12 +312,6 @@
       event.preventDefault();
       guessLetter(letter);
     }
-  }
-
-  function getAllowedKeyboardLetters(): readonly string[] {
-    return mode === 'trad'
-      ? [...baseKeyboardLetters, ...FADA_LETTERS, ...DOT_LETTERS]
-      : [...baseKeyboardLetters, ...FADA_LETTERS];
   }
 
   function useHint(): void {
@@ -575,6 +568,7 @@
         {#key `${mode}:${puzzleSeed}:${visibleSolvedLetters.join('|')}`}
           <CipherKeyboard
             {mode}
+            letters={keyboardLetters}
             solvedLetters={visibleSolvedLetters}
             disabled={locked}
             onpress={guessLetter}
