@@ -1,3 +1,23 @@
+export const IRISH_BASE_LETTERS = [
+  'A',
+  'B',
+  'C',
+  'D',
+  'E',
+  'F',
+  'G',
+  'H',
+  'I',
+  'L',
+  'M',
+  'N',
+  'O',
+  'P',
+  'R',
+  'S',
+  'T',
+  'U'
+] as const;
 export const FADA_LETTERS = ['Á', 'É', 'Í', 'Ó', 'Ú'] as const;
 export const DOT_LETTERS = ['Ḃ', 'Ċ', 'Ḋ', 'Ḟ', 'Ġ', 'Ṁ', 'Ṗ', 'Ṡ', 'Ṫ'] as const;
 export const DIGRAPH_TO_DOT_ABOVE_PAIRS = [
@@ -80,9 +100,8 @@ export type VisibleSolvedLetterOptions = {
   revealAnswer?: boolean;
 };
 
-const BASIC_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const SUBSTITUTION_LETTERS = new Set<string>([
-  ...BASIC_LETTERS,
+  ...IRISH_BASE_LETTERS,
   ...FADA_LETTERS,
   ...DOT_LETTERS
 ]);
@@ -164,6 +183,22 @@ export function getHintAllowance(difficulty: DifficultyTier): number {
 
 export function getLifeCount(difficulty: DifficultyTier): number {
   return DIFFICULTY_SETTINGS[difficulty].lifeCount;
+}
+
+export function getAllowedKeyboardLetters(
+  mode: OrthographyMode,
+  puzzleLetters: readonly string[] = []
+): string[] {
+  const baseLetters = [...IRISH_BASE_LETTERS, ...FADA_LETTERS];
+
+  if (mode === 'digraf') {
+    return baseLetters;
+  }
+
+  const puzzleLetterSet = new Set(puzzleLetters);
+  const dottedLetters = DOT_LETTERS.filter((letter) => puzzleLetterSet.has(letter));
+
+  return [...baseLetters, ...dottedLetters];
 }
 
 export function selectStarterNumbers(

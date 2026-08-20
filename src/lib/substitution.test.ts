@@ -20,6 +20,7 @@ import {
   createSubstitutionPuzzle,
   evaluateGuess,
   extractUniqueLetters,
+  getAllowedKeyboardLetters,
   getHintAllowance,
   getLifeCount,
   getStarterCount,
@@ -73,6 +74,67 @@ describe('substitution logic', () => {
       'F'
     ]);
     expect(isSubstitutionLetter('ċ')).toBe(true);
+  });
+
+  it('limits digraph keyboard letters to the Irish base alphabet plus fada vowels', () => {
+    expect(getAllowedKeyboardLetters('digraf')).toEqual([
+      'A',
+      'B',
+      'C',
+      'D',
+      'E',
+      'F',
+      'G',
+      'H',
+      'I',
+      'L',
+      'M',
+      'N',
+      'O',
+      'P',
+      'R',
+      'S',
+      'T',
+      'U',
+      'Á',
+      'É',
+      'Í',
+      'Ó',
+      'Ú'
+    ]);
+    expect(getAllowedKeyboardLetters('digraf')).not.toEqual(
+      expect.arrayContaining(['J', 'K', 'Q', 'V', 'W', 'X', 'Y', 'Z'])
+    );
+  });
+
+  it('adds only current-puzzle dotted consonants for traditional mode', () => {
+    expect(getAllowedKeyboardLetters('trad', ['A', 'Ċ', 'Ḃ'])).toEqual([
+      'A',
+      'B',
+      'C',
+      'D',
+      'E',
+      'F',
+      'G',
+      'H',
+      'I',
+      'L',
+      'M',
+      'N',
+      'O',
+      'P',
+      'R',
+      'S',
+      'T',
+      'U',
+      'Á',
+      'É',
+      'Í',
+      'Ó',
+      'Ú',
+      'Ḃ',
+      'Ċ'
+    ]);
   });
 
   it('applies the fixed nine-pair dot-above lookup before puzzle generation', () => {
