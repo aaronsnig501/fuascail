@@ -28,7 +28,7 @@
     return solvedNumberSet.has(number);
   }
 
-  function getCellAriaLabel(number: number, solved: boolean): string {
+  function getCellAriaLabel(number: number, solved: boolean, incorrect: boolean): string {
     const guessedLetter = guesses[number];
 
     if (solved) {
@@ -37,6 +37,10 @@
 
     if (selectedNumber === number) {
       return `Cill uimhir ${number}, roghnaithe`;
+    }
+
+    if (incorrect) {
+      return `Cill uimhir ${number}, buille mícheart${guessedLetter === undefined ? '' : ` ${guessedLetter}`}`;
     }
 
     if (guessedLetter !== undefined) {
@@ -62,27 +66,31 @@
       {#each word.cells as cell}
         {#if cell.kind === 'letter'}
           {@const solved = isSolved(cell.number)}
+          {@const guessedLetter = guesses[cell.number] ?? ''}
+          {@const answerLetter = numberToLetter[cell.number] ?? cell.letter}
+          {@const correctGuess = guessedLetter !== '' && guessedLetter === answerLetter}
+          {@const displaySolved = solved || correctGuess}
+          {@const incorrect = guessedLetter !== '' && !correctGuess}
+          {@const letterColor = incorrect ? 'var(--amber-incorrect)' : 'var(--cream)'}
+          {@const underlineColor = displaySolved ? 'var(--cream)' : incorrect ? 'var(--amber-incorrect)' : selectedNumber === cell.number ? 'var(--vermilion-bright)' : 'var(--charcoal-line)'}
           <button
             type="button"
             class={[
               'cipher-cell mr-0.5 flex w-6 flex-col items-center select-none disabled:cursor-default',
               selectedNumber === cell.number ? 'text-[var(--cream)]' : 'text-[var(--cream)]',
-              solved ? 'text-[var(--vermilion-bright)]' : '',
               disabled ? 'cursor-default' : 'cursor-pointer'
             ]}
-            aria-label={getCellAriaLabel(cell.number, solved)}
+            aria-label={getCellAriaLabel(cell.number, displaySolved, incorrect)}
             aria-pressed={selectedNumber === cell.number}
-            disabled={disabled || solved}
+            disabled={disabled || displaySolved}
             onclick={() => selectNumber(cell.number)}
           >
             <span
-              class={[
-                'cipher-letter font-utility flex h-6 w-full items-center justify-center border-b-2 text-lg font-semibold leading-none',
-                selectedNumber === cell.number ? 'border-[var(--vermilion-bright)]' : 'border-[var(--charcoal-line)]',
-                solved ? 'border-[var(--vermilion-dim)] text-[var(--vermilion-bright)]' : ''
-              ]}
+              class="cipher-letter font-utility flex h-6 w-full items-center justify-center border-b-2 text-lg font-semibold leading-none"
+              style:color={letterColor}
+              style:border-color={underlineColor}
             >
-              {solved ? numberToLetter[cell.number] ?? cell.letter : guesses[cell.number] ?? ''}
+              {displaySolved ? answerLetter : guessedLetter}
             </span>
             <span class="cipher-number font-utility mt-0.5 text-[9px] leading-none text-[var(--cream-faint)]">{cell.number}</span>
           </button>
